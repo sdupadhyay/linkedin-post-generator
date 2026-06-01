@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn DNA Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="badge">Phase 3: Post Generation</div>
+            <h1>LinkedIn <span class="gradient-text">DNA Analyzer</span></h1>
+            <p>Extract your unique writing style, generate topics, and craft viral drafts.</p>
+        </header>
+
+        <main>
+            <!-- Phase 1: Input DNA -->
+            <div id="input-section">
+                <div class="posts-container" id="posts-container">
+                    <!-- Posts textareas will be injected here via JS -->
+                </div>
+
+                <div class="controls">
+                    <button id="add-post-btn" class="btn secondary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Add Another Post
+                    </button>
+                    <div class="spacer"></div>
+                    <button id="analyze-btn" class="btn primary">
+                        Analyze DNA
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Global Loading State -->
+            <div id="loading" class="loading-state hidden">
+                <div class="spinner"></div>
+                <p id="loading-text">Analyzing writing patterns...</p>
+            </div>
+
+            <!-- Phase 1: DNA Results -->
+            <div id="results" class="results-container hidden">
+                <div class="results-header">
+                    <h2>Your <span class="gradient-text">Writing DNA</span></h2>
+                    <button id="reset-dna-btn" class="btn secondary small-btn">Reset DNA Profile</button>
+                </div>
+                <div class="dna-grid" id="dna-grid">
+                    <!-- Results will be injected here via JS -->
+                </div>
+                
+                <div class="actions-section">
+                    <button id="generate-topics-btn" class="btn primary full-width">
+                        Generate Trending Topics
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 12 5.25 5 2.625-9.05L15 12l2.25-4 4.75 4"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Phase 2: Topics -->
+            <div id="topics-section" class="topics-container hidden">
+                <h2>Suggested <span class="gradient-text">Topics</span></h2>
+                <p class="section-desc">Select a topic below, or enter your own custom topic.</p>
+                
+                <div class="topics-grid" id="topics-grid">
+                    <!-- Topics will be injected here via JS -->
+                </div>
+
+                <div class="custom-topic-card">
+                    <h3>Have your own idea?</h3>
+                    <input type="text" id="custom-topic-input" class="text-input mb-4" placeholder="Enter a custom topic title (e.g. The future of AI in marketing)">
+                    <textarea id="custom-topic-reasoning" class="text-input reasoning-input" placeholder="Optional: Describe what you want this post to cover in more detail..."></textarea>
+                </div>
+
+                <div class="actions-section final-actions">
+                    <button id="proceed-btn" class="btn primary" disabled>
+                        Proceed to Draft
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Phase 3: Post Draft -->
+            <div id="draft-section" class="draft-container hidden">
+                <h2>Your AI <span class="gradient-text">Draft</span></h2>
+                <p class="section-desc">This post was generated using your custom DNA schema and selected topic.</p>
+                
+                <div class="draft-card">
+                    <textarea id="post-draft-textarea" class="draft-textarea"></textarea>
+                </div>
+
+                <div class="actions-section final-actions">
+                    <button class="btn secondary" onclick="location.reload()">Start Over</button>
+                    <button id="copy-btn" class="btn primary">
+                        Copy to Clipboard
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
