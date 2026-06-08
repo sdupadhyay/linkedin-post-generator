@@ -23,6 +23,112 @@ document.addEventListener('DOMContentLoaded', () => {
     const postDraftTextarea = document.getElementById('post-draft-textarea');
     const copyBtn = document.getElementById('copy-btn');
 
+    // Initialize Supabase client (client‑side)
+    const SUPABASE_URL = "https://<your-project>.supabase.co";
+    const SUPABASE_ANON_KEY = "<your-anon-public-key>";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ----- AUTH UI -----
+    // Simple modal for sign‑in / sign‑up
+    const authSection = document.createElement('div');
+    authSection.id = "auth-section";
+    authSection.innerHTML = `
+      <div id="auth-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center;">
+        <div style="background:#fff; padding:20px; border-radius:8px; min-width:300px;">
+          <h3 id="auth-mode-title">Sign In</h3>
+          <input id="auth-email" type="email" placeholder="email" class="text-input" style="width:100%; margin-bottom:8px;"/>
+          <input id="auth-pw" type="password" placeholder="password" class="text-input" style="width:100%; margin-bottom:8px;"/>
+          <button id="auth-submit" class="btn primary" style="width:100%;">Log In</button>
+          <p id="auth-switch" style="margin-top:8px; cursor:pointer; color:#0066cc;">No account? Sign up</p>
+          <p id="auth-error" style="color:#c00;"></p>
+        </div>
+      </div>
+      <button id="auth-btn" class="btn secondary" style="position:fixed; top:10px; right:10px;">Log In / Sign Up</button>
+    `;
+    document.body.appendChild(authSection);
+
+    // Auth UI state
+    let isSignIn = true;
+    const authBtn = document.getElementById('auth-btn');
+    const authModal = document.getElementById('auth-modal');
+    const authModeTitle = document.getElementById('auth-mode-title');
+    const authSubmit = document.getElementById('auth-submit');
+    const authSwitch = document.getElementById('auth-switch');
+    const authError = document.getElementById('auth-error');
+
+    authBtn.addEventListener('click', () => authModal.classList.toggle('hidden'));
+
+    authSwitch.addEventListener('click', () => {
+      isSignIn = !isSignIn;
+      authModeTitle.textContent = isSignIn ? "Sign In" : "Sign Up";
+      authSubmit.textContent = isSignIn ? "Log In" : "Create Account";
+      authSwitch.textContent = isSignIn ? "No account? Sign up" : "Already have an account? Sign in";
+      authError.textContent = "";
+    });
+
+    // After login / sign‑up, store session token and fetch stored DNA (if any)
+    async function afterLogin() {
+      // Hide auth UI
+      authModal.classList.add('hidden');
+      authBtn.textContent = `Logged in as ${document.getElementById('auth-email').value}`;
+      const session = supabaseClient.auth.session();
+      const token = session?.access_token;
+      if (!token) return;
+
+      // Patch global fetch to include Authorization header automatically
+      const originalFetch = window.fetch;
+      window.fetch = (input, init = {}) => {
+        const authHeaders = { Authorization: `Bearer ${token}` };
+        if (init.headers) {
+          if (init.headers instanceof Headers) {
+            init.headers.set('Authorization', `Bearer ${token}`);
+          } else {
+            init.headers = { ...init.headers, ...authHeaders };
+          }
+        } else {
+          init.headers = authHeaders;
+        }
+        return originalFetch(input, init);
+      };
+
+      // Load any stored DNA for this user
+      try {
+        const resp = await fetch('/api/get-dna');
+        if (resp.ok) {
+          const { dna } = await resp.json();
+          savedDna = dna;
+          localStorage.setItem('writingDna', JSON.stringify(dna));
+          renderDnaResults(dna);
+          inputSection.classList.add('hidden');
+        }
+      } catch (e) {
+        console.warn('No DNA stored for user or fetch error', e);
+      }
+    }
+
+    authSubmit.addEventListener('click', async () => {
+      const emailEl = document.getElementById('auth-email');
+      const pwEl = document.getElementById('auth-pw');
+      const email = emailEl.value.trim();
+      const password = pwEl.value;
+      authError.textContent = "";
+      try {
+        if (isSignIn) {
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.auth.signUp({ email, password });
+          if (error) throw error;
+          authError.textContent = "Check your email for a confirmation link.";
+          return;
+        }
+        await afterLogin();
+      } catch (e) {
+        authError.textContent = (e && e.message) || "Auth error";
+      }
+    });
+
+
     let postCount = 0;
     let selectedTopic = null; // { title: string, reasoning: string, isCustom: boolean }
     let savedDna = null;
@@ -81,6 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
             savedDna = data;
             localStorage.setItem('writingDna', JSON.stringify(data));
             renderDnaResults(data);
+            // Persist DNA to Supabase for logged‑in user
+            fetch('/api/save-dna', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ dnaProfile: data })
+            }).catch(err => console.warn('Failed to store DNA on server', err));
         } catch (error) {
             alert('Error: ' + error.message);
             inputSection.classList.remove('hidden');
