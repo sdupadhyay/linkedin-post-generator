@@ -1,24 +1,31 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements
+document.addEventListener('DOMContentLoaded', async () => {
+    // Auth Elements
+    const authOverlay = document.getElementById('auth-overlay');
+    const appContainer = document.getElementById('app-container');
+    const loginBtn = document.getElementById('login-btn');
+    const signupBtn = document.getElementById('signup-btn');
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const authError = document.getElementById('auth-error');
+
+    // App Elements
     const inputSection = document.getElementById('input-section');
     const postsContainer = document.getElementById('posts-container');
     const addPostBtn = document.getElementById('add-post-btn');
     const analyzeBtn = document.getElementById('analyze-btn');
-    
     const loadingState = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
-    
     const resultsContainer = document.getElementById('results');
     const dnaGrid = document.getElementById('dna-grid');
     const resetDnaBtn = document.getElementById('reset-dna-btn');
     const generateTopicsBtn = document.getElementById('generate-topics-btn');
-
     const topicsSection = document.getElementById('topics-section');
     const topicsGrid = document.getElementById('topics-grid');
     const customTopicInput = document.getElementById('custom-topic-input');
     const customTopicReasoning = document.getElementById('custom-topic-reasoning');
     const proceedBtn = document.getElementById('proceed-btn');
-
     const draftSection = document.getElementById('draft-section');
     const postDraftTextarea = document.getElementById('post-draft-textarea');
     const copyBtn = document.getElementById('copy-btn');
@@ -26,21 +33,125 @@ document.addEventListener('DOMContentLoaded', () => {
     let postCount = 0;
     let selectedTopic = null; // { title: string, reasoning: string, isCustom: boolean }
     let savedDna = null;
+    let sessionToken = null;
+    let supabase = null;
 
-    // Check Local Storage on Load
-    const storedDna = localStorage.getItem('writingDna');
-    if (storedDna) {
-        savedDna = JSON.parse(storedDna);
-        inputSection.classList.add('hidden');
-        renderDnaResults(savedDna);
-    } else {
-        // Initialize with 5 textareas if no DNA saved
-        for (let i = 0; i < 5; i++) {
-            addPostTextarea();
+    // --- INIT AUTH ---
+    try {
+        const configRes = await fetch('/api/config');
+        const config = await configRes.json();
+        
+        if (!config.supabaseUrl || !config.supabaseAnonKey) {
+            console.error("Supabase config missing from server.");
+            showError("System configuration error.");
+        } else {
+            supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+            checkSession();
         }
+    } catch (e) {
+        console.error("Failed to load config", e);
     }
 
-    // --- EVENT LISTENERS ---
+    async function checkSession() {
+        const { data, error } = await supabase.auth.getSession();
+        if (data && data.session) {
+            sessionToken = data.session.access_token;
+            authOverlay.classList.add('hidden');
+            appContainer.style.display = 'block';
+            loadAppState();
+        } else {
+            // Not logged in
+            authOverlay.classList.remove('hidden');
+            appContainer.style.display = 'none';
+        }
+
+        // Listen for auth changes (like returning from Google OAuth)
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                sessionToken = session.access_token;
+                authOverlay.classList.add('hidden');
+                appContainer.style.display = 'block';
+                loadAppState();
+            } else {
+                sessionToken = null;
+                authOverlay.classList.remove('hidden');
+                appContainer.style.display = 'none';
+            }
+        });
+    }
+
+    function showError(msg) {
+        authError.textContent = msg;
+        authError.classList.remove('hidden');
+    }
+
+    // --- AUTH EVENT LISTENERS ---
+
+    loginBtn.addEventListener('click', async () => {
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+        if(!email || !password) return showError("Please enter email and password");
+        
+        authError.classList.add('hidden');
+        loginBtn.disabled = true;
+        
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) showError(error.message);
+        
+        loginBtn.disabled = false;
+    });
+
+    signupBtn.addEventListener('click', async () => {
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+        if(!email || !password) return showError("Please enter email and password");
+        
+        authError.classList.add('hidden');
+        signupBtn.disabled = true;
+        
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) showError(error.message);
+        else showError("Check your email for the confirmation link!"); // Or it logs in if email confirmation is disabled
+        
+        signupBtn.disabled = false;
+    });
+
+    googleLoginBtn.addEventListener('click', async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+        if (error) showError(error.message);
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        // Clear local storage DNA so the next user doesn't see it
+        localStorage.removeItem('writingDna');
+        location.reload();
+    });
+
+
+    // --- APP LOGIC ---
+
+    function loadAppState() {
+        // Check Local Storage on Load
+        const storedDna = localStorage.getItem('writingDna');
+        if (storedDna) {
+            savedDna = JSON.parse(storedDna);
+            inputSection.classList.add('hidden');
+            renderDnaResults(savedDna);
+        } else {
+            // Initialize with 5 textareas if no DNA saved and none exist
+            if (postCount === 0) {
+                for (let i = 0; i < 5; i++) {
+                    addPostTextarea();
+                }
+            }
+        }
+    }
 
     addPostBtn.addEventListener('click', () => {
         if (postCount < 10) {
@@ -68,11 +179,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionToken}`
+                },
                 body: JSON.stringify({ posts })
             });
 
             if (!response.ok) {
+                if (response.status === 401) await supabase.auth.signOut();
                 const errData = await response.json();
                 throw new Error(errData.error || 'Failed to analyze posts');
             }
@@ -105,11 +220,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/topics', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionToken}`
+                },
                 body: JSON.stringify({ dnaProfile: savedDna })
             });
 
             if (!response.ok) {
+                if (response.status === 401) await supabase.auth.signOut();
                 const errData = await response.json();
                 throw new Error(errData.error || 'Failed to generate topics');
             }
@@ -153,11 +272,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionToken}`
+                },
                 body: JSON.stringify({ dnaProfile: savedDna, topic: selectedTopic })
             });
 
             if (!response.ok) {
+                if (response.status === 401) await supabase.auth.signOut();
                 const errData = await response.json();
                 throw new Error(errData.error || 'Failed to generate post');
             }
