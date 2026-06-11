@@ -21,7 +21,7 @@ Here is a visual representation of the application's data flow:
 ```mermaid
 graph TD
     A[User's Past Posts] -->|Input via UI| B(DNA Analyzer Engine)
-    B -->|LangChain + Groq| C[{DNA Profile Schema}]
+    B -->|LangChain + Groq| C[DNA Profile Schema]
     C -->|Secure Save| D[(Supabase PostgreSQL)]
     
     C --> E(Tavily Core Search)
