@@ -9,6 +9,7 @@ const router = Router();
 router.get('/config', getConfig);
 
 // Protected routes
+// requiredAuth mddleware addes user and token in the req object
 router.post('/analyze', requireAuth, handleAnalyze);
 router.post('/topics', requireAuth, handleTopics);
 router.post('/generate', requireAuth, handleGeneratePost);

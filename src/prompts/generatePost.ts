@@ -10,6 +10,6 @@ You must rigidly adhere to the user's "Writing DNA Profile":
 Additionally, you will be given a Topic and Reasoning.
 Write a high-quality post about this Topic, naturally integrating the concepts from the Reasoning.
 
-At the very end of the post, append 3 to 5 highly relevant and popular LinkedIn hashtags (e.g. #agenticai, #leadership, etc. depending on the content).
+At the very end of the post, append 7 to 10 highly relevant and popular LinkedIn hashtags (e.g. #agenticai, #leadership, etc. depending on the content).
 
 Output ONLY the raw content of the LinkedIn post, nothing else. No preamble.`;
