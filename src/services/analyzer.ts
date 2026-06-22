@@ -100,11 +100,26 @@ export async function generatePost(
 	topicData: { title: string; reasoning: string },
 ): Promise<string> {
 	const llm = getLLM();
+	
+	// Step 1: Generate LSI Keywords
+	const lsiPrompt = ChatPromptTemplate.fromMessages([
+		["system", "You are an expert LinkedIn SEO specialist. Given a topic, return exactly 5 to 7 highly relevant LSI (Latent Semantic Indexing) keywords separated by commas. Return ONLY the comma-separated keywords, no introductory text or bullet points."],
+		["user", "Topic: {topicTitle}\nReasoning: {topicReasoning}"]
+	]);
+	const lsiChain = lsiPrompt.pipe(llm).pipe(new StringOutputParser());
+	const lsiKeywords = await lsiChain.invoke({
+		topicTitle: topicData.title,
+		topicReasoning: topicData.reasoning || "Write a compelling post on this topic.",
+	});
+
+	console.log("Generated LSI Keywords:", lsiKeywords);
+
+	// Step 2: Generate Final Post
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", generatePostSystemPrompt],
 		[
 			"user",
-			`User's Writing DNA Profile:\n{dnaProfile}\n\nSelected Topic: {topicTitle}\nTopic Reasoning/Description: {topicReasoning}`,
+			`User's Writing DNA Profile:\n{dnaProfile}\n\nSelected Topic: {topicTitle}\nTopic Reasoning/Description: {topicReasoning}\n\nLSI Keywords to Integrate:\n{lsiKeywords}`,
 		],
 	]);
 
@@ -115,6 +130,7 @@ export async function generatePost(
 		topicTitle: topicData.title,
 		topicReasoning:
 			topicData.reasoning || "Write a compelling post on this topic.",
+		lsiKeywords: lsiKeywords
 	});
 
 	return postContent;
