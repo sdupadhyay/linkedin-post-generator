@@ -8,7 +8,9 @@ An advanced, end-to-end Agentic AI application designed to ghostwrite viral Link
 
 - **Writing DNA Extraction**: Deeply analyzes your past LinkedIn posts to extract a strict JSON schema of your writing style (Tone, Hook Types, Emoji Frequency, Paragraph Sizing).
 - **Real-Time Trend Analysis**: Uses the Tavily SDK to search the web for live, trending professional topics tailored specifically to your niche.
-- **AI Ghostwriting**: Synthesizes your DNA profile with your chosen topic to generate a pixel-perfect, highly engaging LinkedIn draft in your exact voice.
+- **Interactive Outlining (HITL)**: Generates a Content Roadmap (core thesis, narrative flow, proof points, and LSI keywords) and lets you steer the AI with custom feedback before drafting.
+- **SEO & Dwell Time Optimization**: Enforces viral rules including sub-10 word powerful hooks, maximum 2-sentence paragraphs, bullet lists, and natural LSI keyword integration.
+- **AI Ghostwriting**: Synthesizes your DNA profile, approved outline, and steering feedback to generate a pixel-perfect, highly engaging LinkedIn draft.
 - **Supabase Integration**: Fully secured by Supabase Auth (Email + Google OAuth) and automatically persists your DNA profile to a PostgreSQL database.
 - **Beautiful Premium UI**: A highly responsive, glassmorphism-inspired dark mode interface.
 
@@ -27,13 +29,15 @@ graph TD
     C --> E(Tavily Core Search)
     E -->|Live Web Data| F[AI Trending Topics]
     
-    F -->|User Selects Topic| G(Post Generation Engine)
-    C -->|Enforces Tone & Format| G
+    F -->|User Selects Topic| G(Content Outlining Engine)
+    G -->|Generates Roadmap + LSI Keywords| H[Interactive Outline UI]
+    H -->|User Steering Feedback| I(Post Generation Engine)
+    C -->|Enforces Tone & Format| I
     
-    G -->|Groq LLaMA 3| H[Final Ghostwritten Post]
+    I -->|Groq LLaMA 3 + SEO Rules| J[Final Ghostwritten Post]
 ```
 
-The application relies on a sophisticated 3-step AI pipeline using LangChain and Groq's high-speed inference (Llama 3 70B Versatile):
+The application relies on a sophisticated 4-step AI pipeline using LangChain and Groq's high-speed inference (Llama 3 70B Versatile):
 
 ### 1. The DNA Analyzer
 The user submits 3 to 10 of their past LinkedIn posts. The backend uses `withStructuredOutput` alongside Zod schemas to force the LLM to return a highly structured JSON profile. The AI evaluates the input and extracts granular details (e.g., "Conversational Tone", "Question-based Hooks", "Heavy Emoji Usage") and assigns a **Confidence Score** and **Reasoning** to every single extracted metric.
@@ -41,8 +45,15 @@ The user submits 3 to 10 of their past LinkedIn posts. The backend uses `withStr
 ### 2. Trend-Aware Topic Generation
 Once the DNA is extracted, the backend triggers the **Tavily Core SDK**. It searches the live web for trending topics related to the user's core subjects. The LLM then correlates these live web results with the user's DNA profile to suggest 5 to 10 highly relevant post topics, complete with match confidence scores.
 
-### 3. Precision Post Drafting
-The user selects an AI-generated topic or inputs a custom one (with specific reasoning). The final LLM prompt is constructed by aggressively enforcing the rules from the DNA Profile (e.g., "You must use short paragraphs and precisely 3 emojis"). The LLM generates the final draft and intelligently appends 3-5 trending hashtags at the bottom.
+### 3. Interactive Outlining & SEO Roadmap (Human-In-The-Loop)
+When a topic is selected, the AI acts as a Content Strategist and generates a topic-focused roadmap without style noise. It outputs the `core_thesis`, `target_audience_takeaway`, `narrative_arc`, `suggested_examples`, and 4 to 6 `target_lsi_keywords`. The user reviews this roadmap and can input custom steering instructions before authorizing the draft.
+
+### 4. Precision Post Drafting & Dwell Time Boosting
+The final draft combines the user's Writing DNA, the approved roadmap, and the user's steering feedback. To maximize LinkedIn search discoverability and Dwell Time, the LLM is stringently forced to implement:
+- A powerful hook under 10 words.
+- Max 2 sentences per paragraph (generous white space).
+- Clean bullet lists for complex concepts.
+- Natural integration of 4+ LSI keywords and trending hashtags.
 
 ---
 
@@ -119,8 +130,32 @@ Generates a list of suggested post topics using Tavily live search data mapped a
   }
   ```
 
-### 4. Generate Final Post Draft
-Ghostwrites the final LinkedIn post by stringently following the DNA schema rules and incorporating the selected topic.
+### 4. Generate Content Outline (HITL Roadmap)
+Generates a structured content outline and SEO LSI keywords for a chosen topic.
+- **Endpoint**: `POST /api/outline`
+- **Auth Required**: Yes (`Bearer <JWT>`)
+- **Request Body**:
+  ```json
+  {
+    "topic": {
+      "title": "The Future of AI in Leadership",
+      "reasoning": "Focus on how managers can use AI to empower their teams."
+    }
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "core_thesis": "AI won't replace managers; it empowers them to focus on empathy.",
+    "target_audience_takeaway": "Frameworks to start automating daily reports today.",
+    "narrative_arc": ["1. State the administrative burnout problem", "2. Introduce AI co-pilots", "3. Give actionable steps"],
+    "suggested_examples": ["Automating weekly 1-on-1 prep notes"],
+    "target_lsi_keywords": ["agentic workflow", "leadership automation", "team productivity", "AI co-pilot"]
+  }
+  ```
+
+### 5. Generate Final Post Draft
+Ghostwrites the final LinkedIn post by combining DNA style rules, approved outline, steering feedback, and SEO discoverability rules.
 - **Endpoint**: `POST /api/generate`
 - **Auth Required**: Yes (`Bearer <JWT>`)
 - **Request Body**:
@@ -129,9 +164,10 @@ Ghostwrites the final LinkedIn post by stringently following the DNA schema rule
     "dnaProfile": { /* Full DNA Object */ },
     "topic": {
       "title": "The Future of AI in Leadership",
-      "reasoning": "Focus on how managers can use AI to empower their teams.",
-      "isCustom": true
-    }
+      "reasoning": "Focus on how managers can use AI to empower their teams."
+    },
+    "outline": { /* Full Outline Object returned from /api/outline */ },
+    "feedback": "Include a personal story about failing my startup in 2021 in step 2."
   }
   ```
 - **Response**:
