@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { getConfig } from '../controllers/configController';
-import { handleAnalyze, handleTopics, handleGeneratePost } from '../controllers/analyzerController';
+import { handleAnalyze, handleTopics, handleGenerateOutline, handleGeneratePost } from '../controllers/analyzerController';
 
 const router = Router();
 
@@ -12,6 +12,7 @@ router.get('/config', getConfig);
 // requiredAuth mddleware addes user and token in the req object
 router.post('/analyze', requireAuth, handleAnalyze);
 router.post('/topics', requireAuth, handleTopics);
+router.post('/outline', requireAuth, handleGenerateOutline);
 router.post('/generate', requireAuth, handleGeneratePost);
 
 export default router;

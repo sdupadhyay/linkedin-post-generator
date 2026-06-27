@@ -553,3 +553,82 @@ textarea::placeholder {
     resize: vertical;
     outline: none;
 }
+
+/* Phase 5: Outline Specific Styling */
+.outline-container {
+    margin-top: 4rem;
+    padding-top: 4rem;
+    border-top: 1px solid var(--card-border);
+}
+
+.outline-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 1.5rem;
+    backdrop-filter: blur(12px);
+}
+
+.outline-section-block {
+    margin-bottom: 1.5rem;
+}
+
+.outline-section-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent-2);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.outline-thesis {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.outline-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.outline-list li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+    color: var(--text-main);
+}
+
+.outline-list li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--accent-1);
+    font-weight: bold;
+}
+
+.keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.keyword-tag {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: var(--accent-2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.steering-box {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+}

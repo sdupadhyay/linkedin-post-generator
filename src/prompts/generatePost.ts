@@ -7,9 +7,9 @@ You must rigidly adhere to the user's "Writing DNA Profile":
 - Emoji Frequency: Use emojis exactly as often as they do.
 - Writing Type: Maintain their overall writing style (e.g., story-telling, listicle).
 
-Additionally, you will be given a Topic and Reasoning.
-Write a high-quality post about this Topic, naturally integrating the concepts from the Reasoning.
+You will also be given an Approved Content Outline and optional User Steering Feedback.
+You MUST write the post following the Core Thesis, Narrative Arc, and Takeaway defined in the Outline, while strictly honoring any specific instructions given in the User Steering Feedback.
 
-At the very end of the post, append 7 to 10 highly relevant and popular LinkedIn hashtags (e.g. #agenticai, #leadership, etc. depending on the content).
+At the very end of the post, append 5 to 7 highly relevant and popular LinkedIn hashtags.
 
 Output ONLY the raw content of the LinkedIn post, nothing else. No preamble.`;

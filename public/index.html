@@ -110,7 +110,30 @@
 
                 <div class="actions-section final-actions">
                     <button id="proceed-btn" class="btn primary" disabled>
-                        Proceed to Draft
+                        Generate Outline
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Phase 5: Outline Section -->
+            <div id="outline-section" class="outline-container hidden">
+                <h2>Content <span class="gradient-text">Roadmap</span></h2>
+                <p class="section-desc">Review and steer the AI outline before writing the final draft.</p>
+                
+                <div class="outline-card" id="outline-content">
+                    <!-- Outline will be injected here via JS -->
+                </div>
+
+                <div class="steering-box mt-4">
+                    <h3>Steer the AI (Optional Feedback)</h3>
+                    <textarea id="outline-feedback" class="text-input reasoning-input" placeholder="Give specific instructions or personal examples to weave in (e.g. 'Include a story about failing my startup in 2021 in step 2')..."></textarea>
+                </div>
+
+                <div class="actions-section final-actions">
+                    <button id="regenerate-outline-btn" class="btn secondary">Regenerate Outline</button>
+                    <button id="approve-outline-btn" class="btn primary">
+                        Approve & Write Draft
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
                 </div>

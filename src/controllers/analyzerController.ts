@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { analyzePosts, generateTopics, generatePost } from '../services/analyzer';
+import { analyzePosts, generateTopics, generateOutline, generatePost } from '../services/analyzer';
 import { createAuthClient } from '../utils/supabaseClient';
 
 export const handleAnalyze = async (req: Request, res: Response): Promise<any> => {
@@ -66,9 +66,29 @@ export const handleTopics = async (req: Request, res: Response): Promise<any> =>
   }
 };
 
+export const handleGenerateOutline = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { topic } = req.body;
+
+    if (!topic || !topic.title) {
+      return res.status(400).json({ error: 'Please provide a topic with a title.' });
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+      return res.status(500).json({ error: 'GROQ_API_KEY is not configured on the server.' });
+    }
+
+    const outline = await generateOutline(topic);
+    return res.json(outline);
+  } catch (error: any) {
+    console.error("Error generating outline:", error);
+    return res.status(500).json({ error: 'Failed to generate outline', details: error.message });
+  }
+};
+
 export const handleGeneratePost = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { dnaProfile, topic } = req.body;
+    const { dnaProfile, topic, outline, feedback } = req.body;
 
     if (!dnaProfile || !topic || !topic.title) {
       return res.status(400).json({ error: 'Please provide dnaProfile and topic with a title.' });
@@ -78,7 +98,7 @@ export const handleGeneratePost = async (req: Request, res: Response): Promise<a
       return res.status(500).json({ error: 'GROQ_API_KEY is not configured on the server.' });
     }
 
-    const postContent = await generatePost(dnaProfile, topic);
+    const postContent = await generatePost(dnaProfile, topic, outline, feedback);
     return res.json({ post: postContent });
   } catch (error: any) {
     console.error("Error generating post:", error);

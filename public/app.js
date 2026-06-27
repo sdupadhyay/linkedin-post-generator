@@ -26,6 +26,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const customTopicInput = document.getElementById('custom-topic-input');
     const customTopicReasoning = document.getElementById('custom-topic-reasoning');
     const proceedBtn = document.getElementById('proceed-btn');
+    const outlineSection = document.getElementById('outline-section');
+    const outlineContent = document.getElementById('outline-content');
+    const outlineFeedback = document.getElementById('outline-feedback');
+    const regenerateOutlineBtn = document.getElementById('regenerate-outline-btn');
+    const approveOutlineBtn = document.getElementById('approve-outline-btn');
     const draftSection = document.getElementById('draft-section');
     const postDraftTextarea = document.getElementById('post-draft-textarea');
     const copyBtn = document.getElementById('copy-btn');
@@ -33,6 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let postCount = 0;
     let selectedTopic = null; // { title: string, reasoning: string, isCustom: boolean }
     let savedDna = null;
+    let generatedOutline = null;
     let sessionToken = null;
     let supabase = null;
 
@@ -261,13 +267,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     customTopicInput.addEventListener('input', handleCustomInput);
     customTopicReasoning.addEventListener('input', handleCustomInput);
 
-    proceedBtn.addEventListener('click', async () => {
+    async function fetchOutline() {
         if (!selectedTopic) return;
         
         proceedBtn.disabled = true;
-        setLoading(true, "Drafting viral LinkedIn post...");
+        regenerateOutlineBtn.disabled = true;
+        setLoading(true, "Designing content roadmap & SEO strategy...");
         topicsSection.classList.add('hidden');
         resultsContainer.classList.add('hidden');
+        outlineSection.classList.add('hidden');
+
+        try {
+            const response = await fetch('/api/outline', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionToken}`
+                },
+                body: JSON.stringify({ topic: selectedTopic })
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) await supabase.auth.signOut();
+                const errData = await response.json();
+                throw new Error(errData.error || 'Failed to generate outline');
+            }
+
+            const data = await response.json();
+            generatedOutline = data;
+            renderOutline(data);
+        } catch (error) {
+            alert('Error: ' + error.message);
+            topicsSection.classList.remove('hidden');
+            resultsContainer.classList.remove('hidden');
+        } finally {
+            proceedBtn.disabled = false;
+            regenerateOutlineBtn.disabled = false;
+            setLoading(false);
+        }
+    }
+
+    proceedBtn.addEventListener('click', fetchOutline);
+    regenerateOutlineBtn.addEventListener('click', fetchOutline);
+
+    approveOutlineBtn.addEventListener('click', async () => {
+        if (!selectedTopic || !generatedOutline) return;
+
+        const feedback = outlineFeedback.value.trim();
+        approveOutlineBtn.disabled = true;
+        setLoading(true, "Ghostwriting final viral draft based on your outline...");
+        outlineSection.classList.add('hidden');
 
         try {
             const response = await fetch('/api/generate', {
@@ -276,7 +325,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${sessionToken}`
                 },
-                body: JSON.stringify({ dnaProfile: savedDna, topic: selectedTopic })
+                body: JSON.stringify({ 
+                    dnaProfile: savedDna, 
+                    topic: selectedTopic,
+                    outline: generatedOutline,
+                    feedback: feedback
+                })
             });
 
             if (!response.ok) {
@@ -289,10 +343,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderDraft(data.post);
         } catch (error) {
             alert('Error: ' + error.message);
-            topicsSection.classList.remove('hidden');
-            resultsContainer.classList.remove('hidden');
+            outlineSection.classList.remove('hidden');
         } finally {
-            proceedBtn.disabled = false;
+            approveOutlineBtn.disabled = false;
             setLoading(false);
         }
     });
@@ -435,6 +488,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         topicsSection.classList.remove('hidden');
         topicsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderOutline(outline) {
+        outlineContent.innerHTML = `
+            <div class="outline-section-block">
+                <div class="outline-section-title">Core Thesis & Main Argument</div>
+                <div class="outline-thesis">${outline.core_thesis || 'N/A'}</div>
+            </div>
+            <div class="outline-section-block">
+                <div class="outline-section-title">Target Audience Takeaway</div>
+                <div style="font-size: 1.1rem; color: var(--text-muted);">${outline.target_audience_takeaway || 'N/A'}</div>
+            </div>
+            <div class="outline-section-block">
+                <div class="outline-section-title">Narrative Arc & Structure</div>
+                <ul class="outline-list">
+                    ${(outline.narrative_arc || []).map(step => `<li>${step}</li>`).join('')}
+                </ul>
+            </div>
+            <div class="outline-section-block">
+                <div class="outline-section-title">Suggested Proof Points / Examples</div>
+                <ul class="outline-list" style="color: var(--text-muted);">
+                    ${(outline.suggested_examples || []).map(ex => `<li>${ex}</li>`).join('')}
+                </ul>
+            </div>
+            <div class="outline-section-block mb-0">
+                <div class="outline-section-title">Target LSI SEO Keywords</div>
+                <div class="keyword-tags">
+                    ${(outline.target_lsi_keywords || []).map(kw => `<span class="keyword-tag">#${kw}</span>`).join('')}
+                </div>
+            </div>
+        `;
+
+        outlineSection.classList.remove('hidden');
+        outlineSection.scrollIntoView({ behavior: 'smooth' });
     }
 
     function renderDraft(postText) {

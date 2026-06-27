@@ -7,6 +7,8 @@ import { topicSchema, GeneratedTopics } from "../schema/topicSchema";
 import { analyzeSystemPrompt } from "../prompts/analyze";
 import { topicsSystemPrompt } from "../prompts/topics";
 import { generatePostSystemPrompt } from "../prompts/generatePost";
+import { outlineSchema, PostOutline } from "../schema/outlineSchema";
+import { outlineSystemPrompt } from "../prompts/outline";
 import { getLLM } from "../utils/llm";
 import { getSearchTool } from "../utils/searchTool";
 /**
@@ -93,18 +95,46 @@ export async function generateTopics(
 }
 
 /**
- * Generate a LinkedIn post for a given topic.
+ * Generate a content outline based on selected topic (WITHOUT user DNA).
+ */
+export async function generateOutline(
+	topicData: { title: string; reasoning: string },
+): Promise<PostOutline> {
+	const llm = getLLM();
+	const structuredLlm = llm.withStructuredOutput(outlineSchema);
+
+	const prompt = ChatPromptTemplate.fromMessages([
+		["system", outlineSystemPrompt],
+		[
+			"user",
+			`Selected Topic: {topicTitle}\nTopic Reasoning/Description: {topicReasoning}`,
+		],
+	]);
+
+	const chain = prompt.pipe(structuredLlm);
+	const response = await chain.invoke({
+		topicTitle: topicData.title,
+		topicReasoning: topicData.reasoning || "Write a compelling post on this topic.",
+	});
+
+	return response;
+}
+
+/**
+ * Generate a LinkedIn post for a given topic, outline, and steering feedback.
  */
 export async function generatePost(
 	dnaProfile: WritingDna,
 	topicData: { title: string; reasoning: string },
+	outline?: PostOutline,
+	feedback?: string,
 ): Promise<string> {
 	const llm = getLLM();
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", generatePostSystemPrompt],
 		[
 			"user",
-			`User's Writing DNA Profile:\n{dnaProfile}\n\nSelected Topic: {topicTitle}\nTopic Reasoning/Description: {topicReasoning}`,
+			`User's Writing DNA Profile:\n{dnaProfile}\n\nSelected Topic: {topicTitle}\nTopic Reasoning/Description: {topicReasoning}\n\nApproved Content Outline:\n{outlineData}\n\nUser Steering Feedback:\n{userFeedback}`,
 		],
 	]);
 
@@ -115,6 +145,8 @@ export async function generatePost(
 		topicTitle: topicData.title,
 		topicReasoning:
 			topicData.reasoning || "Write a compelling post on this topic.",
+		outlineData: outline ? JSON.stringify(outline, null, 2) : "No outline provided, generate based on topic reasoning.",
+		userFeedback: feedback || "None provided.",
 	});
 
 	return postContent;
