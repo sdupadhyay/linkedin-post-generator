@@ -10,6 +10,7 @@ An advanced, end-to-end Agentic AI application designed to ghostwrite viral Link
 - **Real-Time Trend Analysis**: Uses the Tavily SDK to search the web for live, trending professional topics tailored specifically to your niche.
 - **Interactive Outlining (HITL)**: Generates a Content Roadmap (core thesis, narrative flow, proof points, and LSI keywords) and lets you steer the AI with custom feedback before drafting.
 - **SEO & Dwell Time Optimization**: Enforces viral rules including sub-10 word powerful hooks, maximum 2-sentence paragraphs, bullet lists, and natural LSI keyword integration.
+- **Autonomous Self-Correction (Actor-Critic Review Loop)**: After drafting, an independent AI Reviewer evaluates the post against the Writing DNA across 6 dimensions (Tone, Word Count, Hook Quality, Writing Type, Paragraph Structure, Emoji Usage). If the post scores below 25/30, it automatically regenerates with specific critique instructions until high quality is achieved!
 - **AI Ghostwriting**: Synthesizes your DNA profile, approved outline, and steering feedback to generate a pixel-perfect, highly engaging LinkedIn draft.
 - **Supabase Integration**: Fully secured by Supabase Auth (Email + Google OAuth) and automatically persists your DNA profile to a PostgreSQL database.
 - **Beautiful Premium UI**: A highly responsive, glassmorphism-inspired dark mode interface.
@@ -34,10 +35,12 @@ graph TD
     H -->|User Steering Feedback| I(Post Generation Engine)
     C -->|Enforces Tone & Format| I
     
-    I -->|Groq LLaMA 3 + SEO Rules| J[Final Ghostwritten Post]
+    I -->|Draft Post| J(AI Content Reviewer / Critic)
+    J -->|Score < 25/30: Critique & Recommendations| I
+    J -->|Score >= 25/30| K[Final Ghostwritten Post]
 ```
 
-The application relies on a sophisticated 4-step AI pipeline using LangChain and Groq's high-speed inference (Llama 3 70B Versatile):
+The application relies on a sophisticated 5-step AI pipeline using LangChain and Groq's high-speed inference (Llama 3 70B Versatile):
 
 ### 1. The DNA Analyzer
 The user submits 3 to 10 of their past LinkedIn posts. The backend uses `withStructuredOutput` alongside Zod schemas to force the LLM to return a highly structured JSON profile. The AI evaluates the input and extracts granular details (e.g., "Conversational Tone", "Question-based Hooks", "Heavy Emoji Usage") and assigns a **Confidence Score** and **Reasoning** to every single extracted metric.
@@ -49,11 +52,14 @@ Once the DNA is extracted, the backend triggers the **Tavily Core SDK**. It sear
 When a topic is selected, the AI acts as a Content Strategist and generates a topic-focused roadmap without style noise. It outputs the `core_thesis`, `target_audience_takeaway`, `narrative_arc`, `suggested_examples`, and 4 to 6 `target_lsi_keywords`. The user reviews this roadmap and can input custom steering instructions before authorizing the draft.
 
 ### 4. Precision Post Drafting & Dwell Time Boosting
-The final draft combines the user's Writing DNA, the approved roadmap, and the user's steering feedback. To maximize LinkedIn search discoverability and Dwell Time, the LLM is stringently forced to implement:
+The draft combines the user's Writing DNA, the approved roadmap, and the user's steering feedback. To maximize LinkedIn search discoverability and Dwell Time, the LLM is stringently forced to implement:
 - A powerful hook under 10 words.
 - Max 2 sentences per paragraph (generous white space).
 - Clean bullet lists for complex concepts.
 - Natural integration of 4+ LSI keywords and trending hashtags.
+
+### 5. Autonomous Self-Correction & Quality Review (Actor-Critic Loop)
+Before presenting the draft to the user, an independent AI Reviewer chain evaluates the generated post against the user's Writing DNA across 6 core criteria: Tone, Word Count, Hook Quality, Writing Type, Paragraph Structure, and Emoji Usage. Each attribute is scored from 0–5 (for a total out of 30). If the score falls below 25/30, the Reviewer outputs specific actionable recommendations, and the system automatically triggers a regeneration loop (up to 3 attempts) until the post achieves a high-confidence quality score.
 
 ---
 

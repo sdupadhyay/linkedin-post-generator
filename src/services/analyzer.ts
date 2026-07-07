@@ -6,11 +6,15 @@ import { writingDnaSchema, WritingDna } from "../schema/writingDnaSchema";
 import { topicSchema, GeneratedTopics } from "../schema/topicSchema";
 import { analyzeSystemPrompt } from "../prompts/analyze";
 import { topicsSystemPrompt } from "../prompts/topics";
-import { generatePostSystemPrompt } from "../prompts/generatePost";
+import {
+	generatePostSystemPrompt,
+	reviewPostSystemPrompt,
+} from "../prompts/generatePost";
 import { outlineSchema, PostOutline } from "../schema/outlineSchema";
 import { outlineSystemPrompt } from "../prompts/outline";
 import { getLLM } from "../utils/llm";
 import { getSearchTool } from "../utils/searchTool";
+import { reviewPostSchema } from "../schema/reviewPromptSchema";
 /**
  * Analyze an array of LinkedIn posts and return a Writing DNA profile.
  */
@@ -97,9 +101,10 @@ export async function generateTopics(
 /**
  * Generate a content outline based on selected topic (WITHOUT user DNA).
  */
-export async function generateOutline(
-	topicData: { title: string; reasoning: string },
-): Promise<PostOutline> {
+export async function generateOutline(topicData: {
+	title: string;
+	reasoning: string;
+}): Promise<PostOutline> {
 	const llm = getLLM();
 	const structuredLlm = llm.withStructuredOutput(outlineSchema);
 
@@ -114,7 +119,8 @@ export async function generateOutline(
 	const chain = prompt.pipe(structuredLlm);
 	const response = await chain.invoke({
 		topicTitle: topicData.title,
-		topicReasoning: topicData.reasoning || "Write a compelling post on this topic.",
+		topicReasoning:
+			topicData.reasoning || "Write a compelling post on this topic.",
 	});
 
 	return response;
@@ -140,14 +146,61 @@ export async function generatePost(
 
 	const chain = prompt.pipe(llm).pipe(new StringOutputParser());
 
-	const postContent = await chain.invoke({
-		dnaProfile: JSON.stringify(dnaProfile, null, 2),
-		topicTitle: topicData.title,
-		topicReasoning:
-			topicData.reasoning || "Write a compelling post on this topic.",
-		outlineData: outline ? JSON.stringify(outline, null, 2) : "No outline provided, generate based on topic reasoning.",
-		userFeedback: feedback || "None provided.",
-	});
+	const reviewPrompt = ChatPromptTemplate.fromMessages([
+		["system", reviewPostSystemPrompt],
+		["user", "Post: {postContent}"],
+	]);
+
+	const reviewLlm = llm.withStructuredOutput(reviewPostSchema);
+	const reviewChain = reviewPrompt.pipe(reviewLlm);
+
+	function extractValues(dna_profile: WritingDna) {
+		return Object.entries(dna_profile).reduce((result: any, [key, obj]) => {
+			if (key !== "topic" && obj && typeof obj === "object" && "value" in obj) {
+				result[key] = obj.value;
+			}
+			return result;
+		}, {});
+	}
+
+	let postContent = "";
+	let currentFeedback = feedback || "None provided.";
+	let attempts = 0;
+	const maxAttempts = 3;
+	// Feedback Loop to get post with score >= 25
+	while (attempts < maxAttempts) {
+		postContent = await chain.invoke({
+			dnaProfile: JSON.stringify(dnaProfile, null, 2),
+			topicTitle: topicData.title,
+			topicReasoning:
+				topicData.reasoning || "Write a compelling post on this topic.",
+			outlineData: outline
+				? JSON.stringify(outline, null, 2)
+				: "No outline provided, generate based on topic reasoning.",
+			userFeedback: currentFeedback,
+		});
+
+		const review = await reviewChain.invoke({
+			postContent,
+			dnaProfile: JSON.stringify(extractValues(dnaProfile), null, 2),
+		});
+
+		console.log(
+			`Attempt ${attempts + 1} - Review Score: ${review.total_score}`,
+			{ review },
+		);
+
+		if (review.total_score >= 25 || attempts === maxAttempts - 1) {
+			break;
+		}
+
+		const formattedRecommendations = review.recommendations
+			.map((rec) => `- [${rec.title}]: ${rec.description}`)
+			.join("\n");
+
+		currentFeedback = `Please improve the post based on the following recommendations:\n${formattedRecommendations}\n\nOriginal user steering feedback: ${feedback || "None"}`;
+		attempts++;
+	}
 
 	return postContent;
 }
