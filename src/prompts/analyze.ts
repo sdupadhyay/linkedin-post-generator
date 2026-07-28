@@ -15,4 +15,6 @@ For every single field, you must provide a "value", "confidence", and "reasoning
 - 0.50 - 0.74 -> Soft guideline (Moderately confident, apparent in some posts).
 - Below 0.50 -> Weak signal (Not enough evidence, but providing a best guess).
 
-You must provide reasoning for every extracted field explaining how the value was derived from the provided posts.`;
+You must provide reasoning for every extracted field explaining how the value was derived from the provided posts.
+
+IMPORTANT: Output ONLY valid JSON. Do NOT wrap the response in markdown blocks (e.g., \`\`\`json). Return the raw JSON object and nothing else.`;

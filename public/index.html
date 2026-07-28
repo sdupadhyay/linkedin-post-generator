@@ -43,7 +43,13 @@
         <header>
             <div class="header-top">
                 <div class="badge">Phase 4: Auth & DB</div>
-                <button id="logout-btn" class="btn secondary small-btn">Log Out</button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="llm-provider-select" class="text-input" style="padding: 6px 12px; height: auto;">
+                        <option value="ollama" selected>Model: Ollama Cloud</option>
+                        <option value="groq">Model: Groq (Llama 3)</option>
+                    </select>
+                    <button id="logout-btn" class="btn secondary small-btn">Log Out</button>
+                </div>
             </div>
             <h1>LinkedIn <span class="gradient-text">DNA Analyzer</span></h1>
             <p>Extract your unique writing style, generate topics, and craft viral drafts.</p>

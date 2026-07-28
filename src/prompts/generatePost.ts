@@ -79,5 +79,6 @@ Example of the response
         }}
     ]
 }}
-`;
 
+IMPORTANT: Output ONLY valid JSON. Do NOT wrap the response in markdown blocks (e.g., \`\`\`json). Return the raw JSON object and nothing else.
+`;

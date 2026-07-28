@@ -1,7 +1,6 @@
-import { ChatGroq } from "@langchain/groq";
+import { z } from "zod";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { tavily } from "@tavily/core";
+import { StringOutputParser, JsonOutputParser } from "@langchain/core/output_parsers";
 import { writingDnaSchema, WritingDna } from "../schema/writingDnaSchema";
 import { topicSchema, GeneratedTopics } from "../schema/topicSchema";
 import { analyzeSystemPrompt } from "../prompts/analyze";
@@ -12,15 +11,14 @@ import {
 } from "../prompts/generatePost";
 import { outlineSchema, PostOutline } from "../schema/outlineSchema";
 import { outlineSystemPrompt } from "../prompts/outline";
-import { getLLM } from "../utils/llm";
+import { getLLM, LLMProvider } from "../utils/llm";
 import { getSearchTool } from "../utils/searchTool";
 import { reviewPostSchema } from "../schema/reviewPromptSchema";
 /**
  * Analyze an array of LinkedIn posts and return a Writing DNA profile.
  */
-export async function analyzePosts(posts: string[]): Promise<WritingDna> {
-	const llm = getLLM();
-	const structuredLlm = llm.withStructuredOutput(writingDnaSchema);
+export async function analyzePosts(posts: string[], provider: LLMProvider = 'ollama'): Promise<WritingDna> {
+	const llm = getLLM(provider);
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", analyzeSystemPrompt],
@@ -30,10 +28,12 @@ export async function analyzePosts(posts: string[]): Promise<WritingDna> {
 		.map((post, i) => `--- Post ${i + 1} ---\n${post}`)
 		.join("\n\n");
 
-	const chain = prompt.pipe(structuredLlm);
+	const chain = provider === 'ollama'
+		? prompt.pipe(llm).pipe(new JsonOutputParser())
+		: prompt.pipe(llm.withStructuredOutput(writingDnaSchema));
 
 	const response = await chain.invoke({ posts: formattedPosts });
-	return response;
+	return response as WritingDna;
 }
 
 /**
@@ -41,8 +41,9 @@ export async function analyzePosts(posts: string[]): Promise<WritingDna> {
  */
 export async function generateTopics(
 	dnaProfile: WritingDna,
+    provider: LLMProvider = 'ollama'
 ): Promise<GeneratedTopics> {
-	const llm = getLLM();
+	const llm = getLLM(provider);
 	const searchTool = getSearchTool();
 
 	// Prepare user topics for trend lookup
@@ -79,8 +80,6 @@ export async function generateTopics(
 			"No live trend data available. Use internal knowledge of recent professional trends.";
 	}
 
-	const structuredLlm = llm.withStructuredOutput(topicSchema);
-
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", topicsSystemPrompt],
 		[
@@ -89,13 +88,16 @@ export async function generateTopics(
 		],
 	]);
 
-	const chain = prompt.pipe(structuredLlm);
+	const chain = provider === 'ollama'
+		? prompt.pipe(llm).pipe(new JsonOutputParser())
+		: prompt.pipe(llm.withStructuredOutput(topicSchema));
+
 	const response = await chain.invoke({
 		userTopics,
 		trendData,
 	});
 
-	return response;
+	return response as GeneratedTopics;
 }
 
 /**
@@ -104,26 +106,27 @@ export async function generateTopics(
 export async function generateOutline(topicData: {
 	title: string;
 	reasoning: string;
-}): Promise<PostOutline> {
-	const llm = getLLM();
-	const structuredLlm = llm.withStructuredOutput(outlineSchema);
-
+}, provider: LLMProvider = 'ollama'): Promise<PostOutline> {
+	const llm = getLLM(provider);
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", outlineSystemPrompt],
 		[
 			"user",
-			`Selected Topic: {topicTitle}\nTopic Reasoning/Description: {topicReasoning}`,
+			"Topic Title: {topicTitle}\nTopic Reasoning: {topicReasoning}",
 		],
 	]);
 
-	const chain = prompt.pipe(structuredLlm);
+	const chain = provider === 'ollama'
+		? prompt.pipe(llm).pipe(new JsonOutputParser())
+		: prompt.pipe(llm.withStructuredOutput(outlineSchema));
+
 	const response = await chain.invoke({
 		topicTitle: topicData.title,
 		topicReasoning:
 			topicData.reasoning || "Write a compelling post on this topic.",
 	});
 
-	return response;
+	return response as PostOutline;
 }
 
 /**
@@ -134,8 +137,9 @@ export async function generatePost(
 	topicData: { title: string; reasoning: string },
 	outline?: PostOutline,
 	feedback?: string,
+    provider: LLMProvider = 'ollama'
 ): Promise<string> {
-	const llm = getLLM();
+	const llm = getLLM(provider);
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", generatePostSystemPrompt],
 		[
@@ -148,11 +152,12 @@ export async function generatePost(
 
 	const reviewPrompt = ChatPromptTemplate.fromMessages([
 		["system", reviewPostSystemPrompt],
-		["user", "Post: {postContent}"],
+		["user", "Here is the post to review:\n\n{postContent}"],
 	]);
 
-	const reviewLlm = llm.withStructuredOutput(reviewPostSchema);
-	const reviewChain = reviewPrompt.pipe(reviewLlm);
+	const reviewChain = provider === 'ollama'
+		? reviewPrompt.pipe(llm).pipe(new JsonOutputParser())
+		: reviewPrompt.pipe(llm.withStructuredOutput(reviewPostSchema));
 
 	function extractValues(dna_profile: WritingDna) {
 		return Object.entries(dna_profile).reduce((result: any, [key, obj]) => {
@@ -180,10 +185,10 @@ export async function generatePost(
 			userFeedback: currentFeedback,
 		});
 
-		const review = await reviewChain.invoke({
+		const review = (await reviewChain.invoke({
 			postContent,
 			dnaProfile: JSON.stringify(extractValues(dnaProfile), null, 2),
-		});
+		})) as z.infer<typeof reviewPostSchema>;
 
 		console.log(
 			`Attempt ${attempts + 1} - Review Score: ${review.total_score}`,
@@ -195,7 +200,7 @@ export async function generatePost(
 		}
 
 		const formattedRecommendations = review.recommendations
-			.map((rec) => `- [${rec.title}]: ${rec.description}`)
+			.map((rec: any) => `- [${rec.title}]: ${rec.description}`)
 			.join("\n");
 
 		currentFeedback = `Please improve the post based on the following recommendations:\n${formattedRecommendations}\n\nOriginal user steering feedback: ${feedback || "None"}`;

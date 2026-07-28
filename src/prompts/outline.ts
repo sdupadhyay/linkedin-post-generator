@@ -9,4 +9,4 @@ Return a structured JSON output matching the requested schema:
 - suggested_examples: Real-world proof points or data suggestions.
 - target_lsi_keywords: 4-6 LSI keywords for SEO discoverability.
 
-Output ONLY the structured JSON response.`;
+IMPORTANT: Output ONLY valid JSON. Do NOT wrap the response in markdown blocks (e.g., \`\`\`json). Return the raw JSON object and nothing else.`;
