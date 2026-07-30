@@ -205,6 +205,11 @@ Ghostwrites the final LinkedIn post by combining DNA style rules, approved outli
    OLLAMA_BASE_URL="https://your-ollama-cloud-endpoint"
    OLLAMA_MODEL="llama3"
    OLLAMA_API_KEY="your_ollama_cloud_api_key"
+   
+   # Observability & Tracing (LangSmith)
+   LANGCHAIN_TRACING_V2=true
+   LANGCHAIN_API_KEY="your_langsmith_api_key"
+   LANGCHAIN_PROJECT="LinkedIn Post Generator"
    ```
 
 3. **Supabase Setup**:
