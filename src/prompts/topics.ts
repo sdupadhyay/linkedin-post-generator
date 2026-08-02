@@ -9,4 +9,15 @@ Your output must be a structured list of topics. For each topic, provide:
 - confidence: A score from 0.0 to 1.0 on how well this topic perfectly aligns with BOTH their DNA profile and the recent trends. Calculate this strictly.
 - reasoning: Explain exactly why this topic was chosen.
 
+Output structur of response 
+{
+    "topics": [
+          {
+            "topic_title": "",
+            "confidence": ,
+            "reasoning": ""
+        },
+        // an so on
+    ]
+}
 IMPORTANT: Output ONLY valid JSON. Do NOT wrap the response in markdown blocks (e.g., \`\`\`json). Return the raw JSON object and nothing else.`;

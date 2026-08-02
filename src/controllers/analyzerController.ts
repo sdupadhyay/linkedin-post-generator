@@ -60,7 +60,6 @@ export const handleTopics = async (
 	req: Request,
 	res: Response,
 ): Promise<any> => {
-	console.log("Called")
 	try {
 		const { dnaProfile, provider = "ollama" } = req.body;
 
