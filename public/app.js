@@ -189,7 +189,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${sessionToken}`
                 },
-                body: JSON.stringify({ posts })
+                body: JSON.stringify({ 
+                    posts, 
+                    provider: document.getElementById('llm-provider-select').value 
+                })
             });
 
             if (!response.ok) {
@@ -230,7 +233,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${sessionToken}`
                 },
-                body: JSON.stringify({ dnaProfile: savedDna })
+                body: JSON.stringify({ 
+                    dnaProfile: savedDna, 
+                    provider: document.getElementById('llm-provider-select').value 
+                })
             });
 
             if (!response.ok) {
@@ -284,7 +290,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${sessionToken}`
                 },
-                body: JSON.stringify({ topic: selectedTopic })
+                body: JSON.stringify({ 
+                    topic: selectedTopic, 
+                    provider: document.getElementById('llm-provider-select').value 
+                })
             });
 
             if (!response.ok) {
@@ -329,7 +338,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     dnaProfile: savedDna, 
                     topic: selectedTopic,
                     outline: generatedOutline,
-                    feedback: feedback
+                    feedback: feedback,
+                    provider: document.getElementById('llm-provider-select').value
                 })
             });
 

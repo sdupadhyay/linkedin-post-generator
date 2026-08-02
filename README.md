@@ -67,7 +67,7 @@ Before presenting the draft to the user, an independent AI Reviewer chain evalua
 
 - **Backend**: Node.js, Express, TypeScript
 - **Frontend**: HTML5, Vanilla CSS (Glassmorphism), Vanilla JavaScript
-- **AI & Orchestration**: LangChain, Groq API (Llama 3)
+- **AI & Orchestration**: LangChain, Groq API (Llama 3) / Ollama Cloud (Llama 3)
 - **Web Search**: Tavily SDK
 - **Database & Auth**: Supabase (PostgreSQL + JWT Authentication)
 
@@ -200,6 +200,11 @@ Ghostwrites the final LinkedIn post by combining DNA style rules, approved outli
    TAVILY_API_KEY="your_tavily_api_key"
    SUPABASE_URL="https://your-project.supabase.co"
    SUPABASE_ANON_KEY="your_supabase_anon_key"
+   
+   # Optional: Ollama Cloud Configuration (if using the Ollama UI toggle)
+   OLLAMA_BASE_URL="https://your-ollama-cloud-endpoint"
+   OLLAMA_MODEL="llama3"
+   OLLAMA_API_KEY="your_ollama_cloud_api_key"
    ```
 
 3. **Supabase Setup**:
