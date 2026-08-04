@@ -21,24 +21,7 @@ An advanced, end-to-end Agentic AI application designed to ghostwrite viral Link
 
 Here is a visual representation of the application's data flow:
 
-```mermaid
-graph TD
-    A[User's Past Posts] -->|Input via UI| B(DNA Analyzer Engine)
-    B -->|LangChain + Groq| C[DNA Profile Schema]
-    C -->|Secure Save| D[(Supabase PostgreSQL)]
-    
-    C --> E(Tavily Core Search)
-    E -->|Live Web Data| F[AI Trending Topics]
-    
-    F -->|User Selects Topic| G(Content Outlining Engine)
-    G -->|Generates Roadmap + LSI Keywords| H[Interactive Outline UI]
-    H -->|User Steering Feedback| I(Post Generation Engine)
-    C -->|Enforces Tone & Format| I
-    
-    I -->|Draft Post| J(AI Content Reviewer / Critic)
-    J -->|Score < 25/30: Critique & Recommendations| I
-    J -->|Score >= 25/30| K[Final Ghostwritten Post]
-```
+![Workflow Diagram](./linkedin_post_generator_workflow.png)
 
 The application relies on a sophisticated 5-step AI pipeline using LangChain and Groq's high-speed inference (Llama 3 70B Versatile):
 
