@@ -5,6 +5,7 @@ import {
 	generateOutline,
 	generatePost,
 } from "../services/analyzer";
+import { DEFAULT_PROVIDER } from "../utils/llm";
 import { createAuthClient } from "../utils/supabaseClient";
 
 export const handleAnalyze = async (
@@ -12,7 +13,7 @@ export const handleAnalyze = async (
 	res: Response,
 ): Promise<any> => {
 	try {
-		const { posts, provider = "ollama" } = req.body;
+		const { posts, provider = DEFAULT_PROVIDER } = req.body;
 
 		if (!posts || !Array.isArray(posts) || posts.length === 0) {
 			return res
@@ -61,7 +62,7 @@ export const handleTopics = async (
 	res: Response,
 ): Promise<any> => {
 	try {
-		const { dnaProfile, provider = "ollama" } = req.body;
+		const { dnaProfile, provider = DEFAULT_PROVIDER } = req.body;
 
 		if (!dnaProfile) {
 			return res.status(400).json({ error: "Please provide a dnaProfile." });
@@ -95,7 +96,7 @@ export const handleGenerateOutline = async (
 	res: Response,
 ): Promise<any> => {
 	try {
-		const { topic, provider = "ollama" } = req.body;
+		const { topic, provider = DEFAULT_PROVIDER } = req.body;
 
 		if (!topic || !topic.title) {
 			return res
@@ -129,7 +130,7 @@ export const handleGeneratePost = async (
 			topic,
 			outline,
 			feedback,
-			provider = "ollama",
+			provider = DEFAULT_PROVIDER,
 		} = req.body;
 
 		if (!dnaProfile || !topic || !topic.title) {

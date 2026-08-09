@@ -180,6 +180,7 @@ Ghostwrites the final LinkedIn post by combining DNA style rules, approved outli
    ```env
    PORT=3000
    GROQ_API_KEY="your_groq_api_key"
+   GROQ_MODEL="llama-3.3-70b-versatile" # Optional: Define the Groq model globally
    TAVILY_API_KEY="your_tavily_api_key"
    SUPABASE_URL="https://your-project.supabase.co"
    SUPABASE_ANON_KEY="your_supabase_anon_key"

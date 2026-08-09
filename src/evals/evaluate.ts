@@ -59,8 +59,8 @@ async function toneEvaluator(run: any, example: any) {
   const generatedText = run.outputs?.generated_post;
   const targetTone = example.inputs?.tone;
   
-  // We use Llama 3 70b as a strict judge
-  const llm = new ChatGroq({ model: "llama3-70b-8192", temperature: 0 });
+  // We use the model configured in environment, or fallback to Llama 3
+  const llm = new ChatGroq({ model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile", temperature: 0 });
   
   const schema = z.object({
     score: z.number().min(0).max(1).describe("1 if the text perfectly matches the requested tone, 0 if it completely fails. Fractional scores like 0.8 are allowed."),
