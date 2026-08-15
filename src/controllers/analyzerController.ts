@@ -13,7 +13,7 @@ export const handleAnalyze = async (
 	res: Response,
 ): Promise<any> => {
 	try {
-		const { posts, provider = DEFAULT_PROVIDER } = req.body;
+		const { posts, provider = DEFAULT_PROVIDER, model } = req.body;
 
 		if (!posts || !Array.isArray(posts) || posts.length === 0) {
 			return res
@@ -27,7 +27,11 @@ export const handleAnalyze = async (
 				.json({ error: "GROQ_API_KEY is not configured on the server." });
 		}
 
-		const dnaProfile = await analyzePosts(posts, provider);
+		const dnaProfile = await analyzePosts(
+			posts,
+			provider as "groq" | "ollama",
+			model
+		);
 
 		// Save to Database
 		if (req.user && req.token) {
@@ -62,7 +66,7 @@ export const handleTopics = async (
 	res: Response,
 ): Promise<any> => {
 	try {
-		const { dnaProfile, provider = DEFAULT_PROVIDER } = req.body;
+		const { dnaProfile, provider = DEFAULT_PROVIDER, model } = req.body;
 
 		if (!dnaProfile) {
 			return res.status(400).json({ error: "Please provide a dnaProfile." });
@@ -81,7 +85,11 @@ export const handleTopics = async (
 			);
 		}
 
-		const topics = await generateTopics(dnaProfile, provider);
+		const topics = await generateTopics(
+			dnaProfile,
+			provider as "groq" | "ollama",
+			model
+		);
 		return res.json(topics);
 	} catch (error: any) {
 		console.error("Error generating topics:", error);
@@ -96,7 +104,7 @@ export const handleGenerateOutline = async (
 	res: Response,
 ): Promise<any> => {
 	try {
-		const { topic, provider = DEFAULT_PROVIDER } = req.body;
+		const { topic, provider = DEFAULT_PROVIDER, model } = req.body;
 
 		if (!topic || !topic.title) {
 			return res
@@ -110,7 +118,11 @@ export const handleGenerateOutline = async (
 				.json({ error: "GROQ_API_KEY is not configured on the server." });
 		}
 
-		const outline = await generateOutline(topic, provider);
+		const outline = await generateOutline(
+			topic,
+			provider as "groq" | "ollama",
+			model
+		);
 		return res.json(outline);
 	} catch (error: any) {
 		console.error("Error generating outline:", error);
@@ -131,6 +143,7 @@ export const handleGeneratePost = async (
 			outline,
 			feedback,
 			provider = DEFAULT_PROVIDER,
+			model
 		} = req.body;
 
 		if (!dnaProfile || !topic || !topic.title) {
@@ -150,7 +163,8 @@ export const handleGeneratePost = async (
 			topic,
 			outline,
 			feedback,
-			provider,
+			provider as "groq" | "ollama",
+			model
 		);
 		return res.json({ post: postContent });
 	} catch (error: any) {
