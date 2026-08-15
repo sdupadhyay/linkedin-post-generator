@@ -11,13 +11,13 @@ import {
 } from "../prompts/generatePost";
 import { outlineSchema, PostOutline } from "../schema/outlineSchema";
 import { outlineSystemPrompt } from "../prompts/outline";
-import { getLLM, LLMProvider } from "../utils/llm";
+import { getLLM, LLMProvider, DEFAULT_PROVIDER } from "../utils/llm";
 import { getSearchTool } from "../utils/searchTool";
 import { reviewPostSchema } from "../schema/reviewPromptSchema";
 /**
  * Analyze an array of LinkedIn posts and return a Writing DNA profile.
  */
-export async function analyzePosts(posts: string[], provider: LLMProvider = 'ollama'): Promise<WritingDna> {
+export async function analyzePosts(posts: string[], provider: LLMProvider = DEFAULT_PROVIDER): Promise<WritingDna> {
 	const llm = getLLM(provider);
 
 	const prompt = ChatPromptTemplate.fromMessages([
@@ -41,7 +41,7 @@ export async function analyzePosts(posts: string[], provider: LLMProvider = 'oll
  */
 export async function generateTopics(
 	dnaProfile: WritingDna,
-    provider: LLMProvider = 'ollama'
+    provider: LLMProvider = DEFAULT_PROVIDER
 ): Promise<GeneratedTopics> {
 	const llm = getLLM(provider);
 	const searchTool = getSearchTool();
@@ -106,7 +106,7 @@ export async function generateTopics(
 export async function generateOutline(topicData: {
 	title: string;
 	reasoning: string;
-}, provider: LLMProvider = 'ollama'): Promise<PostOutline> {
+}, provider: LLMProvider = DEFAULT_PROVIDER): Promise<PostOutline> {
 	const llm = getLLM(provider);
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", outlineSystemPrompt],
@@ -137,7 +137,7 @@ export async function generatePost(
 	topicData: { title: string; reasoning: string },
 	outline?: PostOutline,
 	feedback?: string,
-    provider: LLMProvider = 'ollama'
+    provider: LLMProvider = DEFAULT_PROVIDER
 ): Promise<string> {
 	const llm = getLLM(provider);
 	const prompt = ChatPromptTemplate.fromMessages([

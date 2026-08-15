@@ -2,8 +2,9 @@ import { ChatGroq } from "@langchain/groq";
 import { ChatOllama } from "@langchain/ollama";
 
 export type LLMProvider = "groq" | "ollama";
+export const DEFAULT_PROVIDER: LLMProvider = "groq";
 
-export function getLLM(provider: LLMProvider = "ollama") {
+export function getLLM(provider: LLMProvider = DEFAULT_PROVIDER) {
 	if (provider === "ollama") {
 		return new ChatOllama({
 			baseUrl: process.env.OLLAMA_BASE_URL || "",
@@ -21,7 +22,7 @@ export function getLLM(provider: LLMProvider = "ollama") {
 
 	// Fallback to Groq
 	return new ChatGroq({
-		model: "llama-3.3-70b-versatile",
+		model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
 		temperature: 0,
 		maxRetries: 2,
 	});
