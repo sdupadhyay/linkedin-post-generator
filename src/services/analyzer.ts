@@ -17,8 +17,8 @@ import { reviewPostSchema } from "../schema/reviewPromptSchema";
 /**
  * Analyze an array of LinkedIn posts and return a Writing DNA profile.
  */
-export async function analyzePosts(posts: string[], provider: LLMProvider = DEFAULT_PROVIDER): Promise<WritingDna> {
-	const llm = getLLM(provider);
+export async function analyzePosts(posts: string[], provider: LLMProvider = DEFAULT_PROVIDER, model?: string): Promise<WritingDna> {
+	const llm = getLLM(provider, model);
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", analyzeSystemPrompt],
@@ -41,9 +41,10 @@ export async function analyzePosts(posts: string[], provider: LLMProvider = DEFA
  */
 export async function generateTopics(
 	dnaProfile: WritingDna,
-    provider: LLMProvider = DEFAULT_PROVIDER
+    provider: LLMProvider = DEFAULT_PROVIDER,
+	model?: string
 ): Promise<GeneratedTopics> {
-	const llm = getLLM(provider);
+	const llm = getLLM(provider, model);
 	const searchTool = getSearchTool();
 
 	// Prepare user topics for trend lookup
@@ -51,11 +52,11 @@ export async function generateTopics(
 		? dnaProfile.topic.value.join(", ")
 		: String(dnaProfile.topic.value ?? "");
 
-	let trendData = "";
+	let trendData = "No live trend data available. Use internal knowledge of recent professional trends";
 	try {
 		if (searchTool) {
 			const searchResponse = await searchTool.search(
-				`latest trending topics on LinkedIn regarding ${userTopics}`,
+				`latest trending actionable topics and viral post formats on LinkedIn regarding ${userTopics}`,
 				{
 					searchDepth: "basic",
 					maxResults: 5,
@@ -106,8 +107,8 @@ export async function generateTopics(
 export async function generateOutline(topicData: {
 	title: string;
 	reasoning: string;
-}, provider: LLMProvider = DEFAULT_PROVIDER): Promise<PostOutline> {
-	const llm = getLLM(provider);
+}, provider: LLMProvider = DEFAULT_PROVIDER, model?: string): Promise<PostOutline> {
+	const llm = getLLM(provider, model);
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", outlineSystemPrompt],
 		[
@@ -137,9 +138,10 @@ export async function generatePost(
 	topicData: { title: string; reasoning: string },
 	outline?: PostOutline,
 	feedback?: string,
-    provider: LLMProvider = DEFAULT_PROVIDER
+    provider: LLMProvider = DEFAULT_PROVIDER,
+	model?: string
 ): Promise<string> {
-	const llm = getLLM(provider);
+	const llm = getLLM(provider, model);
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", generatePostSystemPrompt],
 		[

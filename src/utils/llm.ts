@@ -2,13 +2,13 @@ import { ChatGroq } from "@langchain/groq";
 import { ChatOllama } from "@langchain/ollama";
 
 export type LLMProvider = "groq" | "ollama";
-export const DEFAULT_PROVIDER: LLMProvider = "groq";
+export const DEFAULT_PROVIDER: LLMProvider = "ollama";
 
-export function getLLM(provider: LLMProvider = DEFAULT_PROVIDER) {
+export function getLLM(provider: LLMProvider = DEFAULT_PROVIDER, modelOverride?: string) {
 	if (provider === "ollama") {
 		return new ChatOllama({
 			baseUrl: process.env.OLLAMA_BASE_URL || "",
-			model: process.env.OLLAMA_MODEL || "llama3",
+			model: modelOverride || process.env.OLLAMA_MODEL || "llama3",
 			temperature: 0,
 			maxRetries: 2,
 			// If the cloud service requires an API key in the headers
@@ -22,7 +22,7 @@ export function getLLM(provider: LLMProvider = DEFAULT_PROVIDER) {
 
 	// Fallback to Groq
 	return new ChatGroq({
-		model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+		model: modelOverride || process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
 		temperature: 0,
 		maxRetries: 2,
 	});
