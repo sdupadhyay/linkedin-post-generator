@@ -8,12 +8,14 @@ An advanced, end-to-end Agentic AI application designed to ghostwrite viral Link
 
 - **Writing DNA Extraction**: Deeply analyzes your past LinkedIn posts to extract a strict JSON schema of your writing style (Tone, Hook Types, Emoji Frequency, Paragraph Sizing).
 - **Real-Time Trend Analysis**: Uses the Tavily SDK to search the web for live, trending professional topics tailored specifically to your niche.
+- **Dynamic Target Audience Engineering**: Intelligently extracts your specific target audience from past posts and displays it in the DNA Dashboard. Uses this audience profile to orchestrate intermediate parallel web searches that uncover *real* pain points and confusions to drive viral topic generation.
+- **Global Model Selection**: Switch seamlessly between local open-source models (via Ollama) and cloud inference (via Groq) directly from the frontend UI.
 - **Interactive Outlining (HITL)**: Generates a Content Roadmap (core thesis, narrative flow, proof points, and LSI keywords) and lets you steer the AI with custom feedback before drafting.
 - **SEO & Dwell Time Optimization**: Enforces viral rules including sub-10 word powerful hooks, maximum 2-sentence paragraphs, bullet lists, and natural LSI keyword integration.
 - **Autonomous Self-Correction (Actor-Critic Review Loop)**: After drafting, an independent AI Reviewer evaluates the post against the Writing DNA across 6 dimensions (Tone, Word Count, Hook Quality, Writing Type, Paragraph Structure, Emoji Usage). If the post scores below 25/30, it automatically regenerates with specific critique instructions until high quality is achieved!
 - **AI Ghostwriting**: Synthesizes your DNA profile, approved outline, and steering feedback to generate a pixel-perfect, highly engaging LinkedIn draft.
 - **Supabase Integration**: Fully secured by Supabase Auth (Email + Google OAuth) and automatically persists your DNA profile to a PostgreSQL database.
-- **Beautiful Premium UI**: A highly responsive, glassmorphism-inspired dark mode interface.
+- **Beautiful Premium UI**: A highly responsive, glassmorphism-inspired dark mode interface with interactive attribute cards.
 
 ---
 
@@ -26,10 +28,10 @@ Here is a visual representation of the application's data flow:
 The application relies on a sophisticated 5-step AI pipeline using LangChain and Groq's high-speed inference (Llama 3 70B Versatile):
 
 ### 1. The DNA Analyzer
-The user submits 3 to 10 of their past LinkedIn posts. The backend uses `withStructuredOutput` alongside Zod schemas to force the LLM to return a highly structured JSON profile. The AI evaluates the input and extracts granular details (e.g., "Conversational Tone", "Question-based Hooks", "Heavy Emoji Usage") and assigns a **Confidence Score** and **Reasoning** to every single extracted metric.
+The user submits 3 to 10 of their past LinkedIn posts. The backend uses `withStructuredOutput` alongside Zod schemas to force the LLM to return a highly structured JSON profile. The AI evaluates the input and extracts granular details (e.g., "Target Audience", "Conversational Tone", "Question-based Hooks") and assigns a **Confidence Score** and **Reasoning** to every single extracted metric.
 
-### 2. Trend-Aware Topic Generation
-Once the DNA is extracted, the backend triggers the **Tavily Core SDK**. It searches the live web for trending topics related to the user's core subjects. The LLM then correlates these live web results with the user's DNA profile to suggest 5 to 10 highly relevant post topics, complete with match confidence scores.
+### 2. Trend-Aware Topic Generation (Parallel Web Search)
+Once the DNA is extracted, the backend utilizes an intermediate LLM call to synthesize 3-4 highly specific web search queries focusing purely on the `target_audience`'s real-world pain points, mistakes, and confusions. These queries are fired in parallel using the **Tavily Core SDK**. The massive context of these parallel searches is aggregated and fed back into the LLM to generate 3 actionable, non-fluff, highly engaging topic ideas.
 
 ### 3. Interactive Outlining & SEO Roadmap (Human-In-The-Loop)
 When a topic is selected, the AI acts as a Content Strategist and generates a topic-focused roadmap without style noise. It outputs the `core_thesis`, `target_audience_takeaway`, `narrative_arc`, `suggested_examples`, and 4 to 6 `target_lsi_keywords`. The user reviews this roadmap and can input custom steering instructions before authorizing the draft.
