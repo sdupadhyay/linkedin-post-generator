@@ -9,6 +9,7 @@ export function getLLM(provider: LLMProvider = DEFAULT_PROVIDER, modelOverride?:
 		return new ChatOllama({
 			baseUrl: process.env.OLLAMA_BASE_URL || "",
 			model: modelOverride || process.env.OLLAMA_MODEL || "llama3",
+			format: "json",
 			temperature: 0,
 			maxRetries: 2,
 			// If the cloud service requires an API key in the headers
