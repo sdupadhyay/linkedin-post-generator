@@ -30,7 +30,9 @@ export const handleAnalyze = async (
 		const dnaProfile = await analyzePosts(
 			posts,
 			provider as "groq" | "ollama",
-			model
+			model,
+			req.token,
+			req.user?.id
 		);
 
 		// Save to Database
@@ -88,7 +90,9 @@ export const handleTopics = async (
 		const topics = await generateTopics(
 			dnaProfile,
 			provider as "groq" | "ollama",
-			model
+			model,
+			req.token,
+			req.user?.id
 		);
 		return res.json(topics);
 	} catch (error: any) {
@@ -121,7 +125,9 @@ export const handleGenerateOutline = async (
 		const outline = await generateOutline(
 			topic,
 			provider as "groq" | "ollama",
-			model
+			model,
+			req.token,
+			req.user?.id
 		);
 		return res.json(outline);
 	} catch (error: any) {
@@ -164,7 +170,9 @@ export const handleGeneratePost = async (
 			outline,
 			feedback,
 			provider as "groq" | "ollama",
-			model
+			model,
+			req.token,
+			req.user?.id
 		);
 		return res.json({ post: postContent });
 	} catch (error: any) {

@@ -12,6 +12,7 @@ An advanced, end-to-end Agentic AI application designed to ghostwrite viral Link
 - **Global Model Selection**: Switch seamlessly between local open-source models (via Ollama) and cloud inference (via Groq) directly from the frontend UI.
 - **Interactive Outlining (HITL)**: Generates a Content Roadmap (core thesis, narrative flow, proof points, and LSI keywords) and lets you steer the AI with custom feedback before drafting.
 - **SEO & Dwell Time Optimization**: Enforces viral rules including sub-10 word powerful hooks, maximum 2-sentence paragraphs, bullet lists, and natural LSI keyword integration.
+- **AI Token Rate Limiting (10K limit)**: Protects the backend from abuse by implementing a robust "Lazy Reset" token tracking system that intercepts LLM usage metadata. Users are strictly limited to 10,000 tokens (input + output) per 24 hours. Includes full historical logging.
 - **Autonomous Self-Correction (Actor-Critic Review Loop)**: After drafting, an independent AI Reviewer evaluates the post against the Writing DNA across 6 dimensions (Tone, Word Count, Hook Quality, Writing Type, Paragraph Structure, Emoji Usage). If the post scores below 25/30, it automatically regenerates with specific critique instructions until high quality is achieved!
 - **AI Ghostwriting**: Synthesizes your DNA profile, approved outline, and steering feedback to generate a pixel-perfect, highly engaging LinkedIn draft.
 - **Supabase Integration**: Fully secured by Supabase Auth (Email + Google OAuth) and automatically persists your DNA profile to a PostgreSQL database.
@@ -45,6 +46,9 @@ The draft combines the user's Writing DNA, the approved roadmap, and the user's 
 
 ### 5. Autonomous Self-Correction & Quality Review (Actor-Critic Loop)
 Before presenting the draft to the user, an independent AI Reviewer chain evaluates the generated post against the user's Writing DNA across 6 core criteria: Tone, Word Count, Hook Quality, Writing Type, Paragraph Structure, and Emoji Usage. Each attribute is scored from 0–5 (for a total out of 30). If the score falls below 25/30, the Reviewer outputs specific actionable recommendations, and the system automatically triggers a regeneration loop (up to 3 attempts) until the post achieves a high-confidence quality score.
+
+### 6. Token Usage Tracking & Rate Limiting
+To prevent abuse, the LangChain pipelines are injected with specialized `Callbacks` that intercept the exact token usage metrics (both input and output) from Groq or Ollama. This data is synced to Supabase, enforcing a strict 10,000 token limit per 24 hours. The system uses a highly optimized "Lazy Reset" strategy to renew limits instantly without requiring background CRON jobs.
 
 ---
 

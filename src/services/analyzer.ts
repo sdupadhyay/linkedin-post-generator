@@ -22,6 +22,8 @@ import {
 	SearchQueries,
 } from "../schema/searchQueriesSchema";
 import { searchQueriesSystemPrompt } from "../prompts/searchQueries";
+import { getUsageCallback } from "./usageTracker";
+
 /**
  * Analyze an array of LinkedIn posts and return a Writing DNA profile.
  */
@@ -29,6 +31,8 @@ export async function analyzePosts(
 	posts: string[],
 	provider: LLMProvider = DEFAULT_PROVIDER,
 	model?: string,
+	token?: string,
+	userId?: string,
 ): Promise<WritingDna> {
 	const llm = getLLM(provider, model);
 
@@ -45,7 +49,9 @@ export async function analyzePosts(
 			? prompt.pipe(llm).pipe(new JsonOutputParser())
 			: prompt.pipe(llm.withStructuredOutput(writingDnaSchema));
 
-	const response = await chain.invoke({ posts: formattedPosts });
+	const callbacks =
+		token && userId ? [getUsageCallback(token, userId)] : undefined;
+	const response = await chain.invoke({ posts: formattedPosts }, { callbacks });
 	return response as WritingDna;
 }
 
@@ -56,6 +62,8 @@ export async function generateTopics(
 	dnaProfile: WritingDna,
 	provider: LLMProvider = DEFAULT_PROVIDER,
 	model?: string,
+	token?: string,
+	userId?: string,
 ): Promise<GeneratedTopics> {
 	const llm = getLLM(provider, model);
 	const searchTool = getSearchTool();
@@ -72,7 +80,6 @@ export async function generateTopics(
 		"No live trend data available. Use internal knowledge of recent professional trends";
 	try {
 		if (searchTool) {
-			console.log("Inside Search Tool");
 			// 1. Generate search queries using LLM
 			const queryPrompt = ChatPromptTemplate.fromMessages([
 				["system", searchQueriesSystemPrompt],
@@ -88,11 +95,17 @@ export async function generateTopics(
 					: queryPrompt.pipe(llm.withStructuredOutput(searchQueriesSchema));
 
 			let queryResponse: any;
+			const callbacks =
+				token && userId ? [getUsageCallback(token, userId)] : undefined;
+
 			if (provider === "ollama") {
-				const rawOutput = await queryChain.invoke({
-					topics: userTopics,
-					target_audience: targetAudience,
-				});
+				const rawOutput = await queryChain.invoke(
+					{
+						topics: userTopics,
+						target_audience: targetAudience,
+					},
+					{ callbacks },
+				);
 				console.log("Raw LLM Output:", rawOutput);
 				try {
 					queryResponse = JSON.parse(rawOutput as string);
@@ -101,13 +114,15 @@ export async function generateTopics(
 					queryResponse = { queries: [] };
 				}
 			} else {
-				queryResponse = (await queryChain.invoke({
-					topics: userTopics,
-					target_audience: targetAudience,
-				})) as SearchQueries;
+				queryResponse = (await queryChain.invoke(
+					{
+						topics: userTopics,
+						target_audience: targetAudience,
+					},
+					{ callbacks },
+				)) as SearchQueries;
 			}
 			const generatedQueries = queryResponse.queries || [];
-			console.log("Generated Search Queries:", generatedQueries);
 
 			// 2. Execute parallel search queries
 			if (generatedQueries.length > 0) {
@@ -131,7 +146,7 @@ export async function generateTopics(
 				);
 
 				trendData = JSON.stringify(aggregated);
-				console.log({ trendData });
+				// console.log({ trendData });
 			}
 		} else {
 			throw new Error("Tavily SDK not initialized");
@@ -158,11 +173,16 @@ export async function generateTopics(
 			? prompt.pipe(llm).pipe(new JsonOutputParser())
 			: prompt.pipe(llm.withStructuredOutput(topicSchema));
 
-	const response = await chain.invoke({
-		targetAudience,
-		userTopics,
-		trendData,
-	});
+	const callbacks =
+		token && userId ? [getUsageCallback(token, userId)] : undefined;
+	const response = await chain.invoke(
+		{
+			targetAudience,
+			userTopics,
+			trendData,
+		},
+		{ callbacks },
+	);
 
 	return response as GeneratedTopics;
 }
@@ -177,6 +197,8 @@ export async function generateOutline(
 	},
 	provider: LLMProvider = DEFAULT_PROVIDER,
 	model?: string,
+	token?: string,
+	userId?: string,
 ): Promise<PostOutline> {
 	const llm = getLLM(provider, model);
 	const prompt = ChatPromptTemplate.fromMessages([
@@ -189,11 +211,16 @@ export async function generateOutline(
 			? prompt.pipe(llm).pipe(new JsonOutputParser())
 			: prompt.pipe(llm.withStructuredOutput(outlineSchema));
 
-	const response = await chain.invoke({
-		topicTitle: topicData.title,
-		topicReasoning:
-			topicData.reasoning || "Write a compelling post on this topic.",
-	});
+	const callbacks =
+		token && userId ? [getUsageCallback(token, userId)] : undefined;
+	const response = await chain.invoke(
+		{
+			topicTitle: topicData.title,
+			topicReasoning:
+				topicData.reasoning || "Write a compelling post on this topic.",
+		},
+		{ callbacks },
+	);
 
 	return response as PostOutline;
 }
@@ -208,6 +235,8 @@ export async function generatePost(
 	feedback?: string,
 	provider: LLMProvider = DEFAULT_PROVIDER,
 	model?: string,
+	token?: string,
+	userId?: string,
 ): Promise<string> {
 	const llm = getLLM(provider, model);
 	const prompt = ChatPromptTemplate.fromMessages([
@@ -239,27 +268,35 @@ export async function generatePost(
 		}, {});
 	}
 
-	let postContent = "";
+	let postContent: string = "";
+	const callbacks =
+		token && userId ? [getUsageCallback(token, userId)] : undefined;
 	let currentFeedback = feedback || "None provided.";
 	let attempts = 0;
 	const maxAttempts = 3;
 	// Feedback Loop to get post with score >= 25
 	while (attempts < maxAttempts) {
-		postContent = await chain.invoke({
-			dnaProfile: JSON.stringify(dnaProfile, null, 2),
-			topicTitle: topicData.title,
-			topicReasoning:
-				topicData.reasoning || "Write a compelling post on this topic.",
-			outlineData: outline
-				? JSON.stringify(outline, null, 2)
-				: "No outline provided, generate based on topic reasoning.",
-			userFeedback: currentFeedback,
-		});
+		postContent = await chain.invoke(
+			{
+				dnaProfile: JSON.stringify(dnaProfile, null, 2),
+				topicTitle: topicData.title,
+				topicReasoning:
+					topicData.reasoning || "Write a compelling post on this topic.",
+				outlineData: outline
+					? JSON.stringify(outline, null, 2)
+					: "No outline provided, generate based on topic reasoning.",
+				userFeedback: currentFeedback,
+			},
+			{ callbacks },
+		);
 
-		const review = (await reviewChain.invoke({
-			postContent,
-			dnaProfile: JSON.stringify(extractValues(dnaProfile), null, 2),
-		})) as z.infer<typeof reviewPostSchema>;
+		const review = (await reviewChain.invoke(
+			{
+				postContent,
+				dnaProfile: JSON.stringify(extractValues(dnaProfile), null, 2),
+			},
+			{ callbacks },
+		)) as z.infer<typeof reviewPostSchema>;
 
 		console.log(
 			`Attempt ${attempts + 1} - Review Score: ${review.total_score}`,
