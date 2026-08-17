@@ -12,7 +12,7 @@ You MUST write the post following the Core Thesis, Narrative Arc, and Takeaway d
 
 At the very end of the post, append 5 to 7 highly relevant and popular LinkedIn hashtags.
 
-Output ONLY the raw content of the LinkedIn post, nothing else. No preamble.`;
+Output ONLY the raw content(no markdown please) of the LinkedIn post, nothing else. No preamble.`;
 
 export const reviewPostSystemPrompt = `
 You are a Senior LinkedIn Content Reviewer and Content Quality Analyst with expertise in evaluating high-performing LinkedIn posts.

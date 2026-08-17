@@ -27,6 +27,19 @@ export const handleAnalyze = async (
 				.json({ error: "GROQ_API_KEY is not configured on the server." });
 		}
 
+		// 1. Save Posts to Database First
+		// We do this before calling the LLM so that if the LLM fails or times out,
+		// the user doesn't lose the posts they just pasted in.
+		if (req.user && req.token) {
+			const userClient = createAuthClient(req.token);
+			const postsToInsert = posts.map((content: string) => ({ user_id: req.user!.id, content }));
+			const { error: postsError } = await userClient.from("user_posts").insert(postsToInsert);
+			if (postsError) {
+				console.error("Failed to save onboarding posts:", postsError);
+			}
+		}
+
+		// 2. Run Heavy AI Analysis
 		const dnaProfile = await analyzePosts(
 			posts,
 			provider as "groq" | "ollama",
@@ -35,10 +48,9 @@ export const handleAnalyze = async (
 			req.user?.id
 		);
 
-		// Save to Database
+		// 3. Save resulting DNA Profile
 		if (req.user && req.token) {
 			const userClient = createAuthClient(req.token);
-
 			const { error } = await userClient.from("user_dna").upsert(
 				{
 					user_id: req.user.id,
@@ -46,11 +58,10 @@ export const handleAnalyze = async (
 					updated_at: new Date().toISOString(),
 				},
 				{ onConflict: "user_id" },
-			); // Requires user_id to be unique
+			);
 
 			if (error) {
 				console.error("Failed to save DNA to database:", error);
-				// We still return the profile even if DB save fails to not break the UI
 			}
 		}
 
@@ -61,6 +72,47 @@ export const handleAnalyze = async (
 			.status(500)
 			.json({ error: "Failed to analyze posts", details: error.message });
 	}
+};
+
+export const handleRegenerateDNA = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { provider = DEFAULT_PROVIDER, model } = req.body;
+        
+        if (provider === "groq" && !process.env.GROQ_API_KEY) {
+			return res.status(500).json({ error: "GROQ_API_KEY is not configured on the server." });
+		}
+
+        if (!req.token || !req.user?.id) return res.status(401).json({ error: "Unauthorized" });
+        const userClient = createAuthClient(req.token);
+        
+        // Fetch posts
+        const { data: posts, error } = await userClient.from("user_posts").select("content");
+        if (error || !posts || posts.length === 0) {
+            return res.status(400).json({ error: "No saved posts found to analyze. Please add some posts first." });
+        }
+        
+        const postContents = posts.map(p => p.content);
+        
+        const dnaProfile = await analyzePosts(
+            postContents, 
+            provider as "groq" | "ollama", 
+            model, 
+            req.token, 
+            req.user.id
+        );
+        
+        // Save to Database
+        await userClient.from("user_dna").upsert({
+            user_id: req.user.id,
+            dna_profile: dnaProfile,
+            updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+        
+        return res.json(dnaProfile);
+    } catch (error: any) {
+        console.error("Error regenerating DNA:", error);
+		return res.status(500).json({ error: "Failed to regenerate DNA", details: error.message });
+    }
 };
 
 export const handleTopics = async (
