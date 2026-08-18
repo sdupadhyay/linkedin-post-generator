@@ -164,7 +164,7 @@ export async function generateTopics(
 		["system", topicsSystemPrompt],
 		[
 			"user",
-			`User's Target Audience:\n{targetAudience}\n\nUser's previous post topics:\n{userTopics}\n\nRecent Search Trends:\n{trendData}`,
+			`User's TARGET AUDIENCE:\n{targetAudience}\n\n USER'S PREVIOUS POST TOPICS:\n{userTopics}\n\n RECENT SEARCH TRENDS:\n{trendData}`,
 		],
 	]);
 
