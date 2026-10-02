@@ -8,6 +8,7 @@ Analyze the following aspects:
 5. paragraph_size: The average size of their paragraphs.
 6. writing_type: The overall style of their writing (e.g., story-telling, analytical, listicle).
 7. topic: An array of the main topics they cover.
+8. target_audience: The specific target audience of the user (e.g., Junior React Developers, B2B SaaS Founders).
 
 Confidence Rules:
 For every single field, you must provide a "value", "confidence", and "reasoning".

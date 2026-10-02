@@ -13,7 +13,8 @@ export const writingDnaSchema = z.object({
   emoji_frequency: fieldSchema(z.string().describe("Frequency or amount of emojis used. E.g., 'high', 'moderate', 'low', 'none', or a specific average number.")),
   paragraph_size: fieldSchema(z.string().describe("Average size of paragraphs. E.g., '1-2 sentences', 'short', 'long', 'mixed'.")),
   writing_type: fieldSchema(z.string().describe("The style or type of writing. E.g., story-telling, analytical, listicle, advice.")),
-  topic: fieldSchema(z.array(z.string()).describe("List of main topics covered across the posts."))
+  topic: fieldSchema(z.array(z.string()).describe("List of main topics covered across the posts.")),
+  target_audience: fieldSchema(z.string().describe("The specific target audience for these posts based on context. E.g., 'Junior Frontend Developers', 'B2B SaaS Founders'."))
 });
 
 export type WritingDna = z.infer<typeof writingDnaSchema>;

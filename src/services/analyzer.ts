@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { StringOutputParser, JsonOutputParser } from "@langchain/core/output_parsers";
+import {
+	StringOutputParser,
+	JsonOutputParser,
+} from "@langchain/core/output_parsers";
 import { writingDnaSchema, WritingDna } from "../schema/writingDnaSchema";
 import { topicSchema, GeneratedTopics } from "../schema/topicSchema";
 import { analyzeSystemPrompt } from "../prompts/analyze";
@@ -14,10 +17,23 @@ import { outlineSystemPrompt } from "../prompts/outline";
 import { getLLM, LLMProvider, DEFAULT_PROVIDER } from "../utils/llm";
 import { getSearchTool } from "../utils/searchTool";
 import { reviewPostSchema } from "../schema/reviewPromptSchema";
+import {
+	searchQueriesSchema,
+	SearchQueries,
+} from "../schema/searchQueriesSchema";
+import { searchQueriesSystemPrompt } from "../prompts/searchQueries";
+import { getUsageCallback } from "./usageTracker";
+
 /**
  * Analyze an array of LinkedIn posts and return a Writing DNA profile.
  */
-export async function analyzePosts(posts: string[], provider: LLMProvider = DEFAULT_PROVIDER, model?: string): Promise<WritingDna> {
+export async function analyzePosts(
+	posts: string[],
+	provider: LLMProvider = DEFAULT_PROVIDER,
+	model?: string,
+	token?: string,
+	userId?: string,
+): Promise<WritingDna> {
 	const llm = getLLM(provider, model);
 
 	const prompt = ChatPromptTemplate.fromMessages([
@@ -28,11 +44,14 @@ export async function analyzePosts(posts: string[], provider: LLMProvider = DEFA
 		.map((post, i) => `--- Post ${i + 1} ---\n${post}`)
 		.join("\n\n");
 
-	const chain = provider === 'ollama'
-		? prompt.pipe(llm).pipe(new JsonOutputParser())
-		: prompt.pipe(llm.withStructuredOutput(writingDnaSchema));
+	const chain =
+		provider === "ollama"
+			? prompt.pipe(llm).pipe(new JsonOutputParser())
+			: prompt.pipe(llm.withStructuredOutput(writingDnaSchema));
 
-	const response = await chain.invoke({ posts: formattedPosts });
+	const callbacks =
+		token && userId ? [getUsageCallback(token, userId)] : undefined;
+	const response = await chain.invoke({ posts: formattedPosts }, { callbacks });
 	return response as WritingDna;
 }
 
@@ -41,8 +60,10 @@ export async function analyzePosts(posts: string[], provider: LLMProvider = DEFA
  */
 export async function generateTopics(
 	dnaProfile: WritingDna,
-    provider: LLMProvider = DEFAULT_PROVIDER,
-	model?: string
+	provider: LLMProvider = DEFAULT_PROVIDER,
+	model?: string,
+	token?: string,
+	userId?: string,
 ): Promise<GeneratedTopics> {
 	const llm = getLLM(provider, model);
 	const searchTool = getSearchTool();
@@ -52,29 +73,87 @@ export async function generateTopics(
 		? dnaProfile.topic.value.join(", ")
 		: String(dnaProfile.topic.value ?? "");
 
-	let trendData = "No live trend data available. Use internal knowledge of recent professional trends";
+	const targetAudience =
+		dnaProfile.target_audience?.value || "General professional audience";
+
+	let trendData =
+		"No live trend data available. Use internal knowledge of recent professional trends";
 	try {
 		if (searchTool) {
-			const searchResponse = await searchTool.search(
-				`latest trending actionable topics and viral post formats on LinkedIn regarding ${userTopics}`,
-				{
-					searchDepth: "basic",
-					maxResults: 5,
-				},
-			);
-			trendData = JSON.stringify(
-				searchResponse.results.map((r) => ({
-					title: r.title,
-					content: r.content,
-				})),
-			);
-			console.log({ trendData: JSON.parse(trendData) });
+			// 1. Generate search queries using LLM
+			const queryPrompt = ChatPromptTemplate.fromMessages([
+				["system", searchQueriesSystemPrompt],
+				[
+					"user",
+					"Generate the web search queries for this audience and topic.",
+				],
+			]);
+
+			const queryChain =
+				provider === "ollama"
+					? queryPrompt.pipe(llm).pipe(new StringOutputParser())
+					: queryPrompt.pipe(llm.withStructuredOutput(searchQueriesSchema));
+
+			let queryResponse: any;
+			const callbacks =
+				token && userId ? [getUsageCallback(token, userId)] : undefined;
+
+			if (provider === "ollama") {
+				const rawOutput = await queryChain.invoke(
+					{
+						topics: userTopics,
+						target_audience: targetAudience,
+					},
+					{ callbacks },
+				);
+				console.log("Raw LLM Output:", rawOutput);
+				try {
+					queryResponse = JSON.parse(rawOutput as string);
+				} catch (e) {
+					console.error("Failed to parse raw output into JSON");
+					queryResponse = { queries: [] };
+				}
+			} else {
+				queryResponse = (await queryChain.invoke(
+					{
+						topics: userTopics,
+						target_audience: targetAudience,
+					},
+					{ callbacks },
+				)) as SearchQueries;
+			}
+			const generatedQueries = queryResponse.queries || [];
+
+			// 2. Execute parallel search queries
+			if (generatedQueries.length > 0) {
+				const searchPromises = generatedQueries.map((query: string) =>
+					searchTool
+						.search(query, { searchDepth: "basic", maxResults: 3 })
+						.catch((err) => {
+							console.warn(`Search failed for query: "${query}"`, err);
+							return { results: [] };
+						}),
+				);
+
+				const searchResults = await Promise.all(searchPromises);
+
+				// 3. Aggregate results
+				const aggregated = searchResults.flatMap((response: any) =>
+					response.results.map((r: any) => ({
+						title: r.title,
+						content: r.content,
+					})),
+				);
+
+				trendData = JSON.stringify(aggregated);
+				// console.log({ trendData });
+			}
 		} else {
 			throw new Error("Tavily SDK not initialized");
 		}
 	} catch (error) {
 		console.warn(
-			"Tavily search failed or API key missing, proceeding with LLM baseline knowledge.",
+			"Tavily search workflow failed or API key missing, proceeding with LLM baseline knowledge.",
 			error,
 		);
 		trendData =
@@ -85,18 +164,25 @@ export async function generateTopics(
 		["system", topicsSystemPrompt],
 		[
 			"user",
-			`User's previous post topics:\n{userTopics}\n\nRecent Search Trends:\n{trendData}`,
+			`User's Target Audience:\n{targetAudience}\n\nUser's previous post topics:\n{userTopics}\n\nRecent Search Trends:\n{trendData}`,
 		],
 	]);
 
-	const chain = provider === 'ollama'
-		? prompt.pipe(llm).pipe(new JsonOutputParser())
-		: prompt.pipe(llm.withStructuredOutput(topicSchema));
+	const chain =
+		provider === "ollama"
+			? prompt.pipe(llm).pipe(new JsonOutputParser())
+			: prompt.pipe(llm.withStructuredOutput(topicSchema));
 
-	const response = await chain.invoke({
-		userTopics,
-		trendData,
-	});
+	const callbacks =
+		token && userId ? [getUsageCallback(token, userId)] : undefined;
+	const response = await chain.invoke(
+		{
+			targetAudience,
+			userTopics,
+			trendData,
+		},
+		{ callbacks },
+	);
 
 	return response as GeneratedTopics;
 }
@@ -104,28 +190,37 @@ export async function generateTopics(
 /**
  * Generate a content outline based on selected topic (WITHOUT user DNA).
  */
-export async function generateOutline(topicData: {
-	title: string;
-	reasoning: string;
-}, provider: LLMProvider = DEFAULT_PROVIDER, model?: string): Promise<PostOutline> {
+export async function generateOutline(
+	topicData: {
+		title: string;
+		reasoning: string;
+	},
+	provider: LLMProvider = DEFAULT_PROVIDER,
+	model?: string,
+	token?: string,
+	userId?: string,
+): Promise<PostOutline> {
 	const llm = getLLM(provider, model);
 	const prompt = ChatPromptTemplate.fromMessages([
 		["system", outlineSystemPrompt],
-		[
-			"user",
-			"Topic Title: {topicTitle}\nTopic Reasoning: {topicReasoning}",
-		],
+		["user", "Topic Title: {topicTitle}\nTopic Reasoning: {topicReasoning}"],
 	]);
 
-	const chain = provider === 'ollama'
-		? prompt.pipe(llm).pipe(new JsonOutputParser())
-		: prompt.pipe(llm.withStructuredOutput(outlineSchema));
+	const chain =
+		provider === "ollama"
+			? prompt.pipe(llm).pipe(new JsonOutputParser())
+			: prompt.pipe(llm.withStructuredOutput(outlineSchema));
 
-	const response = await chain.invoke({
-		topicTitle: topicData.title,
-		topicReasoning:
-			topicData.reasoning || "Write a compelling post on this topic.",
-	});
+	const callbacks =
+		token && userId ? [getUsageCallback(token, userId)] : undefined;
+	const response = await chain.invoke(
+		{
+			topicTitle: topicData.title,
+			topicReasoning:
+				topicData.reasoning || "Write a compelling post on this topic.",
+		},
+		{ callbacks },
+	);
 
 	return response as PostOutline;
 }
@@ -138,8 +233,10 @@ export async function generatePost(
 	topicData: { title: string; reasoning: string },
 	outline?: PostOutline,
 	feedback?: string,
-    provider: LLMProvider = DEFAULT_PROVIDER,
-	model?: string
+	provider: LLMProvider = DEFAULT_PROVIDER,
+	model?: string,
+	token?: string,
+	userId?: string,
 ): Promise<string> {
 	const llm = getLLM(provider, model);
 	const prompt = ChatPromptTemplate.fromMessages([
@@ -157,9 +254,10 @@ export async function generatePost(
 		["user", "Here is the post to review:\n\n{postContent}"],
 	]);
 
-	const reviewChain = provider === 'ollama'
-		? reviewPrompt.pipe(llm).pipe(new JsonOutputParser())
-		: reviewPrompt.pipe(llm.withStructuredOutput(reviewPostSchema));
+	const reviewChain =
+		provider === "ollama"
+			? reviewPrompt.pipe(llm).pipe(new JsonOutputParser())
+			: reviewPrompt.pipe(llm.withStructuredOutput(reviewPostSchema));
 
 	function extractValues(dna_profile: WritingDna) {
 		return Object.entries(dna_profile).reduce((result: any, [key, obj]) => {
@@ -170,27 +268,35 @@ export async function generatePost(
 		}, {});
 	}
 
-	let postContent = "";
+	let postContent: string = "";
+	const callbacks =
+		token && userId ? [getUsageCallback(token, userId)] : undefined;
 	let currentFeedback = feedback || "None provided.";
 	let attempts = 0;
 	const maxAttempts = 3;
 	// Feedback Loop to get post with score >= 25
 	while (attempts < maxAttempts) {
-		postContent = await chain.invoke({
-			dnaProfile: JSON.stringify(dnaProfile, null, 2),
-			topicTitle: topicData.title,
-			topicReasoning:
-				topicData.reasoning || "Write a compelling post on this topic.",
-			outlineData: outline
-				? JSON.stringify(outline, null, 2)
-				: "No outline provided, generate based on topic reasoning.",
-			userFeedback: currentFeedback,
-		});
+		postContent = await chain.invoke(
+			{
+				dnaProfile: JSON.stringify(dnaProfile, null, 2),
+				topicTitle: topicData.title,
+				topicReasoning:
+					topicData.reasoning || "Write a compelling post on this topic.",
+				outlineData: outline
+					? JSON.stringify(outline, null, 2)
+					: "No outline provided, generate based on topic reasoning.",
+				userFeedback: currentFeedback,
+			},
+			{ callbacks },
+		);
 
-		const review = (await reviewChain.invoke({
-			postContent,
-			dnaProfile: JSON.stringify(extractValues(dnaProfile), null, 2),
-		})) as z.infer<typeof reviewPostSchema>;
+		const review = (await reviewChain.invoke(
+			{
+				postContent,
+				dnaProfile: JSON.stringify(extractValues(dnaProfile), null, 2),
+			},
+			{ callbacks },
+		)) as z.infer<typeof reviewPostSchema>;
 
 		console.log(
 			`Attempt ${attempts + 1} - Review Score: ${review.total_score}`,
