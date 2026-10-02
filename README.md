@@ -27,39 +27,6 @@ Here is a visual representation of the application's data flow:
 
 ![Workflow Diagram](./linkedin_post_generator_workflow.png)
 
-### Updated V2 Architecture & Data Flow
-
-```mermaid
-graph TD
-    %% 1. DNA Extraction
-    Posts([User Past Posts]) -- "Input via UI" --> DNAEngine[DNA Analyze Engine]
-    DNAEngine -- "LangChain + LLM Models" --> DNASchema[DNA Profile Schema]
-    
-    %% Path A: Database
-    DNASchema -. "Secure & Save" .-> DB[(Supabase PostgreSQL)]
-    
-    %% Path B: Trend Search & Outlining
-    DNASchema --> Tavily[Tavily Core Web Search]
-    Tavily -- "Executes 3-4 Parallel Live Web Searches" --> TrendingTopics[AI Trending Topics]
-    
-    %% Topic Selection
-    TrendingTopics --> SelectedTopic([User Selected Topic])
-    SelectedTopic --> OutlineEngine[Content Outline Engine]
-    
-    %% Interactive UI
-    OutlineEngine -- "Generates Roadmap + LSI Keywords" --> OutlineUI[Interactive Outline UI]
-    
-    %% User Feedback & Post Generation
-    Steering([User Steering Feedback]) --> OutlineUI
-    OutlineUI --> PostGen[Post Generation Engine]
-    
-    %% Actor-Critic Review Loop
-    PostGen --> Draft[Draft Post]
-    Draft --> Reviewer{AI Content Reviewer / Critic}
-    
-    Reviewer -- "Score < 25/30 (Applies Recommendations)" --> PostGen
-    Reviewer -- "Score >= 25/30" --> Final([Final Ghostwritten Post])
-```
 
 The application relies on a sophisticated 5-step AI pipeline using LangChain and Groq's high-speed inference (Llama 3 70B Versatile):
 
