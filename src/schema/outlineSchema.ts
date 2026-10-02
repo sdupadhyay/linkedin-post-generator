@@ -11,7 +11,12 @@ export const outlineSchema = z.object({
     .array(z.string())
     .describe("An array of 3 to 4 chronological steps detailing how the content will flow (e.g., '1. Identify the mistake -> 2. Explain why it fails -> 3. Provide framework to fix it')."),
   suggested_examples: z
-    .array(z.string())
+    .array(
+      z.object({
+        type: z.enum(["anecdote", "prompt_for_user"]),
+        content: z.string()
+      })
+    )
     .describe("Ideas for real-world scenarios, case studies, metrics, or personal experiences that should be highlighted to support the lesson."),
   target_lsi_keywords: z
     .array(z.string())

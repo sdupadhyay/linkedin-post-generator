@@ -12,6 +12,7 @@ An advanced, end-to-end Agentic AI application designed to ghostwrite viral Link
 - **Global Model Selection**: Switch seamlessly between local open-source models (via Ollama) and cloud inference (via Groq) directly from the frontend UI.
 - **Interactive Outlining (HITL)**: Generates a Content Roadmap (core thesis, narrative flow, proof points, and LSI keywords) and lets you steer the AI with custom feedback before drafting.
 - **SEO & Dwell Time Optimization**: Enforces viral rules including sub-10 word powerful hooks, maximum 2-sentence paragraphs, bullet lists, and natural LSI keyword integration.
+- **Continuous AI Training (Saved Posts)**: Dedicated "Training Data" dashboard where users can store, manage, and curate their highest-performing posts. Allows users to click a single button to "Regenerate DNA" and update their AI persona dynamically as their writing style evolves!
 - **AI Token Rate Limiting (10K limit)**: Protects the backend from abuse by implementing a robust "Lazy Reset" token tracking system that intercepts LLM usage metadata. Users are strictly limited to 10,000 tokens (input + output) per 24 hours. Includes full historical logging.
 - **Autonomous Self-Correction (Actor-Critic Review Loop)**: After drafting, an independent AI Reviewer evaluates the post against the Writing DNA across 6 dimensions (Tone, Word Count, Hook Quality, Writing Type, Paragraph Structure, Emoji Usage). If the post scores below 25/30, it automatically regenerates with specific critique instructions until high quality is achieved!
 - **AI Ghostwriting**: Synthesizes your DNA profile, approved outline, and steering feedback to generate a pixel-perfect, highly engaging LinkedIn draft.
@@ -49,6 +50,9 @@ Before presenting the draft to the user, an independent AI Reviewer chain evalua
 
 ### 6. Token Usage Tracking & Rate Limiting
 To prevent abuse, the LangChain pipelines are injected with specialized `Callbacks` that intercept the exact token usage metrics (both input and output) from Groq or Ollama. This data is synced to Supabase, enforcing a strict 10,000 token limit per 24 hours. The system uses a highly optimized "Lazy Reset" strategy to renew limits instantly without requiring background CRON jobs.
+
+### 7. Training Data Management
+Users are no longer locked into their initial DNA profile. The `user_posts` PostgreSQL table saves all posts used for extraction. A dedicated CRUD dashboard allows users to continually curate their best-performing posts (add new ones, delete irrelevant ones) and trigger the `/api/analyze/regenerate` backend pipeline to dynamically update their AI persona over time.
 
 ---
 
