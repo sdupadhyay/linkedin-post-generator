@@ -27,6 +27,7 @@ Here is a visual representation of the application's data flow:
 
 ![Workflow Diagram](./linkedin_post_generator_workflow.png)
 
+
 The application relies on a sophisticated 5-step AI pipeline using LangChain and Groq's high-speed inference (Llama 3 70B Versatile):
 
 ### 1. The DNA Analyzer
@@ -122,8 +123,10 @@ Generates a list of suggested post topics using Tavily live search data mapped a
     "topics": [
       {
         "topic_title": "The Future of AI in Leadership",
-        "reasoning": "Matches your interest in AI and trend data shows high engagement.",
-        "confidence": 0.91
+        "audience_fit": 0.91,
+        "trend_relevance": 0.88,
+        "source_trend": "Tavily search indicated a 50% rise in queries about AI coaching.",
+        "reasoning": "Matches your interest in AI and trend data shows high engagement."
       }
     ]
   }
@@ -148,7 +151,12 @@ Generates a structured content outline and SEO LSI keywords for a chosen topic.
     "core_thesis": "AI won't replace managers; it empowers them to focus on empathy.",
     "target_audience_takeaway": "Frameworks to start automating daily reports today.",
     "narrative_arc": ["1. State the administrative burnout problem", "2. Introduce AI co-pilots", "3. Give actionable steps"],
-    "suggested_examples": ["Automating weekly 1-on-1 prep notes"],
+    "suggested_examples": [
+      {
+        "type": "anecdote",
+        "content": "Automating weekly 1-on-1 prep notes"
+      }
+    ],
     "target_lsi_keywords": ["agentic workflow", "leadership automation", "team productivity", "AI co-pilot"]
   }
   ```

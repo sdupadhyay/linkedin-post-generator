@@ -4,6 +4,7 @@ import { requireRateLimit } from '../middleware/rateLimit';
 import { getConfig } from '../controllers/configController';
 import { handleAnalyze, handleTopics, handleGenerateOutline, handleGeneratePost, handleRegenerateDNA } from '../controllers/analyzerController';
 import { getPosts, addPost, deletePost } from '../controllers/postController';
+import { getTokenUsage } from '../controllers/usageController';
 
 const router = Router();
 
@@ -23,5 +24,8 @@ router.post('/generate', requireAuth, requireRateLimit, handleGeneratePost);
 router.get('/posts', requireAuth, getPosts);
 router.post('/posts', requireAuth, addPost);
 router.delete('/posts/:id', requireAuth, deletePost);
+
+// Token Usage
+router.get('/tokens/usage', requireAuth, getTokenUsage);
 
 export default router;

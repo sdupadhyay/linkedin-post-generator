@@ -1,6 +1,6 @@
 import { createAuthClient } from "../utils/supabaseClient";
 
-const DAILY_TOKEN_LIMIT = 20000;
+export const DAILY_TOKEN_LIMIT = 50000;
 
 /**
  * Checks if the user has exceeded their daily token limit.
