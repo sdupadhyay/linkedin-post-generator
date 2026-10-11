@@ -1,6 +1,32 @@
 # 🧬 LinkedIn Post Generator AI
 
-An advanced, end-to-end Agentic AI application designed to ghostwrite viral LinkedIn posts by perfectly mimicking a user's unique writing style. Built with a modern Node.js/Express backend, Vanilla JS frontend, LangChain, Groq LLMs, Tavily web search, and Supabase Authentication & PostgreSQL.
+An advanced, end-to-end Agentic AI application designed to ghostwrite viral LinkedIn posts by perfectly mimicking a user's unique writing style. Built with a modern Node.js/Express backend, React (Vite) frontend with Tailwind CSS, LangChain, Groq/Ollama LLMs, Tavily web search, and Supabase Authentication & PostgreSQL.
+
+---
+
+## 📸 Application Showcase & Walkthrough
+
+Here is a visual walkthrough of the complete end-to-end user experience:
+
+| 1. Train Your Writing DNA | 2. Writing DNA Profile Dashboard |
+|:---:|:---:|
+| ![Train Writing DNA](./screenshots/linkedin_post_page.png) | ![Writing Profile DNA](./screenshots/user_dna.png) |
+| *Submit past LinkedIn posts or sample data to extract tone, hook style, and rhythm.* | *Granular linguistic fingerprint breakdown with confidence metrics & reasonings.* |
+
+| 3. Live Trend Topic Recommendations | 4. Custom Topic Refinement |
+|:---:|:---:|
+| ![Recommended Topics](./screenshots/topic_screen.png) | ![Create Your Own Topic](./screenshots/custom_topic_screen.png) |
+| *Real-time web trends matched specifically to your audience pain points via Tavily.* | *Option to feed a custom idea, spark, or keywords to guide the generation.* |
+
+| 5. Interactive Content Roadmap | 6. Human-In-The-Loop Steering & SEO |
+|:---:|:---:|
+| ![Content Outline](./screenshots/outline_screen.png) | ![Steering & Feedback](./screenshots/outline_user_feedback.png) |
+| *Content strategist breakdown with thesis, takeaway, and narrative arc phases.* | *Inspect target LSI keywords and provide steering instructions before drafting.* |
+
+| 7. Ghostwritten Draft & AI Review | 8. Token Quota & AI Engine Preferences |
+|:---:|:---:|
+| ![Ready-to-Publish Post](./screenshots/final_post.png) | ![Account Preferences](./screenshots/token_limit.png) |
+| *Actor-Critic evaluated draft featuring sub-10 word hook, white space, and 1-click copy.* | *Live token consumption tracking with lazy reset and dynamic model toggling.* |
 
 ---
 
@@ -93,10 +119,11 @@ Users are no longer locked into their initial DNA profile. The `user_posts` Post
 ## 🛠 Tech Stack
 
 - **Backend**: Node.js, Express, TypeScript
-- **Frontend**: HTML5, Vanilla CSS (Glassmorphism), Vanilla JavaScript
+- **Frontend**: React 19, Vite, Tailwind CSS, Lucide Icons
 - **AI & Orchestration**: LangChain, Groq API (Llama 3) / Ollama Cloud (Llama 3)
-- **Web Search**: Tavily SDK
+- **Web Search**: Tavily Core SDK
 - **Database & Auth**: Supabase (PostgreSQL + JWT Authentication)
+- **Containerization**: Docker, Docker Compose
 
 ---
 
